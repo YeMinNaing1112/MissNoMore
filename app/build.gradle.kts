@@ -2,6 +2,10 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("org.jetbrains.kotlin.kapt")
+    kotlin("plugin.serialization") version "2.0.0"
+
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -43,6 +47,42 @@ dependencies {
     //Google Map
     implementation(libs.maps.compose)
     implementation(libs.play.services.maps)
+
+    //For Multiple permission
+    implementation(libs.accompanist.permissions)
+
+    //Kotlin Serialization
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.kotlinx.serialization.json)
+
+    //OsmMap
+    implementation(libs.osmdroid.android)
+
+    //Location
+    implementation(libs.play.services.location)
+
+    //Retrofit
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.gson)
+
+
+    //Okhttp
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    //Hilt
+    implementation(libs.hilt.android)
+    implementation(libs.androidx.material3)
+    kapt(libs.hilt.compiler)
+
+    implementation(libs.androidx.hilt.navigation.compose)
+
+
+    implementation(platform("androidx.compose:compose-bom:2025.02.00"))
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
