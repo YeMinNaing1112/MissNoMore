@@ -37,7 +37,7 @@ fun SearchScreen(modifier: Modifier = Modifier) {
     val viewModel: SearchScreenViewModel = hiltViewModel()
     val placeStates by viewModel.getPlaceStates.collectAsState()
     SearchScreenDesign(modifier, placeStates, search = {
-        viewModel.searchPlace(it)
+        viewModel.onQueryChange(it)
     })
 }
 
@@ -58,16 +58,14 @@ fun SearchScreenDesign(
             value = query,
             onValueChange = {
                 query = it
-
+                search(it)
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             placeholder = { Text("Search destination...") },
             leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = null, Modifier.clickable {
-                    search(query)
-                })
+                Icon(Icons.Default.Search, contentDescription = null)
 
             },
             singleLine = true,

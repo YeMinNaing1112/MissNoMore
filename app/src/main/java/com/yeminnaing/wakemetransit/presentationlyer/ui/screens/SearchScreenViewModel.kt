@@ -5,8 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.yeminnaing.wakemetransit.domainlayer.model.PlaceModel
 import com.yeminnaing.wakemetransit.domainlayer.usecases.search.SearchPlacesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -14,21 +18,41 @@ import javax.inject.Inject
 class SearchScreenViewModel @Inject constructor(
     val mSearchPlaceUseCase: SearchPlacesUseCase,
 ) : ViewModel() {
+    private var searchQuery = MutableStateFlow("")
     private var _getPlaceSates = MutableStateFlow<GetPlaceStates>(GetPlaceStates.Empty)
     val getPlaceStates = _getPlaceSates.asStateFlow()
 
-    fun searchPlace(query: String) {
+    init {
+        searchPlace()
+    }
+
+
+    @OptIn(FlowPreview::class)
+   private fun searchPlace() {
         viewModelScope.launch {
-            _getPlaceSates.value = GetPlaceStates.Loading
+            searchQuery.debounce(500)
+                .distinctUntilChanged()
+                .collectLatest { query ->
 
-            try {
-                val result = mSearchPlaceUseCase(query)
+                    if (query.length < 2 || query.isEmpty()) {
+                        return@collectLatest
+                    }
+                    _getPlaceSates.value = GetPlaceStates.Loading
 
-                _getPlaceSates.value = GetPlaceStates.Success(result)
-            } catch (e: Exception) {
-                _getPlaceSates.value = GetPlaceStates.Error(e.message.toString())
-            }
+                    try {
+                        val result = mSearchPlaceUseCase(query)
+
+                        _getPlaceSates.value = GetPlaceStates.Success(result)
+                    } catch (e: Exception) {
+                        _getPlaceSates.value = GetPlaceStates.Error(e.message.toString())
+                    }
+                }
+
         }
+    }
+
+    fun onQueryChange(query: String) {
+        searchQuery.value = query
     }
 
     sealed interface GetPlaceStates {
