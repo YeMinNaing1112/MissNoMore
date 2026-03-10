@@ -19,8 +19,8 @@ class MainActivity : ComponentActivity() {
                 getSharedPreferences("osm_pref",MODE_PRIVATE)
             )
         setContent {
-          //  MissNoMoreNavGraph()
-            SearchScreen()
+            MissNoMoreNavGraph()
+//            SearchScreen()
         }
     }
 }

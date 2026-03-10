@@ -29,15 +29,33 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import com.yeminnaing.wakemetransit.domainlayer.model.PlaceModel
+import com.yeminnaing.wakemetransit.presentationlyer.navigations.MissNoMoreDestinations
 
 
 @Composable
-fun SearchScreen(modifier: Modifier = Modifier) {
+fun SearchScreen(modifier: Modifier = Modifier, navHost: NavHostController) {
     val viewModel: SearchScreenViewModel = hiltViewModel()
     val placeStates by viewModel.getPlaceStates.collectAsState()
     SearchScreenDesign(modifier, placeStates, search = {
         viewModel.onQueryChange(it)
+    }, navigateToMapScreen = {
+        navHost.navigate(
+            MissNoMoreDestinations.MapScreenDestination(
+                lat = it.lat,
+                lon = it.lon,
+                id = it.id,
+                name = it.name
+            )
+        ) {
+            popUpTo(navHost.graph.findStartDestination().id) {
+                inclusive = true
+                saveState = false
+            }
+            launchSingleTop = true
+        }
     })
 }
 
@@ -47,6 +65,7 @@ fun SearchScreenDesign(
     modifier: Modifier = Modifier,
     placeStates: SearchScreenViewModel.GetPlaceStates,
     search: (query: String) -> Unit,
+    navigateToMapScreen: (place: PlaceModel) -> Unit,
 ) {
 
 
@@ -102,7 +121,11 @@ fun SearchScreenDesign(
                         .padding(start = 16.dp, end = 16.dp)
                 ) {
                     items(places) { place ->
-                        Text(place.name)
+                        Text(
+                            text = place.name,
+                            modifier = modifier.clickable {
+                                navigateToMapScreen(place)
+                            })
                     }
                 }
 
@@ -128,6 +151,7 @@ private fun SearchScreenDesignPre() {
                 )
             )
         ),
-        search = {}
+        search = {},
+        navigateToMapScreen = {}
     )
 }
