@@ -3,20 +3,26 @@ package com.yeminnaing.wakemetransit.presentationlyer.ui.screens
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yeminnaing.wakemetransit.domainlayer.model.PlaceModel
+import com.yeminnaing.wakemetransit.domainlayer.usecases.search.GetRecentPlaceUseCase
+import com.yeminnaing.wakemetransit.domainlayer.usecases.search.SaveRecentPlaceUseCase
 import com.yeminnaing.wakemetransit.domainlayer.usecases.search.SearchPlacesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SearchScreenViewModel @Inject constructor(
     val mSearchPlaceUseCase: SearchPlacesUseCase,
+    val mSaveRecentPlacesUseCase: SaveRecentPlaceUseCase,
+    val mGetRecentPlaceUseCase: GetRecentPlaceUseCase,
 ) : ViewModel() {
     private var searchQuery = MutableStateFlow("")
     private var _getPlaceSates = MutableStateFlow<GetPlaceStates>(GetPlaceStates.Empty)
@@ -26,9 +32,21 @@ class SearchScreenViewModel @Inject constructor(
         searchPlace()
     }
 
+    val recentPlaces = mGetRecentPlaceUseCase.invoke()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    fun addRecentPlace(place: PlaceModel) {
+        viewModelScope.launch {
+            mSaveRecentPlacesUseCase.invoke(place)
+        }
+    }
 
     @OptIn(FlowPreview::class)
-   private fun searchPlace() {
+    private fun searchPlace() {
         viewModelScope.launch {
             searchQuery.debounce(500)
                 .distinctUntilChanged()

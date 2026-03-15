@@ -78,6 +78,14 @@ dependencies {
 
     implementation(libs.androidx.hilt.navigation.compose)
 
+    //room database
+    implementation(libs.androidx.room.runtime)
+
+    // Kotlin extensions + Coroutines support
+    implementation(libs.androidx.room.ktx)
+    kapt("androidx.room:room-compiler:2.8.4")
+
+
 
     implementation(platform("androidx.compose:compose-bom:2025.02.00"))
     implementation("androidx.compose.material3:material3")

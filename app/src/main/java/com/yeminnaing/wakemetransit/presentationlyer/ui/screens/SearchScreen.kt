@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.yeminnaing.wakemetransit.domainlayer.model.PlaceModel
@@ -39,24 +40,34 @@ import com.yeminnaing.wakemetransit.presentationlyer.navigations.MissNoMoreDesti
 fun SearchScreen(modifier: Modifier = Modifier, navHost: NavHostController) {
     val viewModel: SearchScreenViewModel = hiltViewModel()
     val placeStates by viewModel.getPlaceStates.collectAsState()
-    SearchScreenDesign(modifier, placeStates, search = {
-        viewModel.onQueryChange(it)
-    }, navigateToMapScreen = {
-        navHost.navigate(
-            MissNoMoreDestinations.MapScreenDestination(
-                lat = it.lat,
-                lon = it.lon,
-                id = it.id,
-                name = it.name
-            )
-        ) {
-            popUpTo(navHost.graph.findStartDestination().id) {
-                inclusive = true
-                saveState = false
+    val recentPlace by viewModel.recentPlaces.collectAsStateWithLifecycle()
+    SearchScreenDesign(
+        modifier,
+        placeStates,
+        search = {
+            viewModel.onQueryChange(it)
+        },
+        navigateToMapScreen = {
+            navHost.navigate(
+                MissNoMoreDestinations.MapScreenDestination(
+                    lat = it.lat,
+                    lon = it.lon,
+                    id = it.id,
+                    name = it.name
+                )
+            ) {
+                popUpTo(navHost.graph.findStartDestination().id) {
+                    inclusive = true
+                    saveState = false
+                }
+                launchSingleTop = true
             }
-            launchSingleTop = true
+        },
+        recentPlace,
+        addToRecent = {
+            viewModel.addRecentPlace(it)
         }
-    })
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +77,8 @@ fun SearchScreenDesign(
     placeStates: SearchScreenViewModel.GetPlaceStates,
     search: (query: String) -> Unit,
     navigateToMapScreen: (place: PlaceModel) -> Unit,
+    recentPlace: List<PlaceModel>,
+    addToRecent:(place: PlaceModel)-> Unit
 ) {
 
 
@@ -96,6 +109,22 @@ fun SearchScreenDesign(
             )
 
         )
+//recentPlaces
+        if (query.isEmpty()) {
+            LazyColumn(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp)
+            ) {
+                items(items = recentPlace) { place ->
+                    Text(
+                        text = place.name,
+                        modifier = modifier.clickable {
+                            navigateToMapScreen(place)
+                        })
+                }
+            }
+        }
 
         when (placeStates) {
             is SearchScreenViewModel.GetPlaceStates.Empty -> {}
@@ -125,6 +154,7 @@ fun SearchScreenDesign(
                             text = place.name,
                             modifier = modifier.clickable {
                                 navigateToMapScreen(place)
+                                addToRecent(place)
                             })
                     }
                 }
@@ -152,6 +182,8 @@ private fun SearchScreenDesignPre() {
             )
         ),
         search = {},
-        navigateToMapScreen = {}
+        navigateToMapScreen = {},
+        recentPlace = listOf(),
+        addToRecent = {}
     )
 }
