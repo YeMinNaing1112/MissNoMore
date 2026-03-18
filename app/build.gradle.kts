@@ -57,10 +57,11 @@ dependencies {
 
     //OsmMap
     implementation(libs.osmdroid.android)
+    implementation(libs.osmdroid.bonus.pack)
+
 
     //Location
     implementation(libs.play.services.location)
-
     //Retrofit
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
@@ -68,8 +69,8 @@ dependencies {
 
 
     //Okhttp
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp:5.3.2")
+    implementation("com.squareup.okhttp3:logging-interceptor:5.3.2")
 
     //Hilt
     implementation(libs.hilt.android)

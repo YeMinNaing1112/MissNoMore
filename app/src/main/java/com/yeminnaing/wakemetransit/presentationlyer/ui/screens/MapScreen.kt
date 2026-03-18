@@ -34,6 +34,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.navigation.NavHostController
 import com.yeminnaing.wakemetransit.R
 import com.yeminnaing.wakemetransit.presentationlyer.navigations.MissNoMoreDestinations
+import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
@@ -105,27 +106,35 @@ fun MapScreenDesign(
                     val bitmap = it.toBitmap()
                     locationOverlay.setDirectionIcon(bitmap)
                 }
-
-                //DistinationMarker
                 val marker = Marker(mapView)
-                if (lat != null && lon != null) {
+                locationOverlay.enableMyLocation()
+                locationOverlay.runOnFirstFix {
+                    val myLocation = locationOverlay.myLocation
 
+                    if (lat != null && lon != null) {
+                        val boundingBox = BoundingBox.fromGeoPoints(
+                            listOf<GeoPoint>(myLocation, marker.position)
+                        )
+                        mapView.post {
+                            mapView.zoomToBoundingBox(boundingBox, true, 150)
+                        }
+
+                    } else if (myLocation != null) {
+                        mapView.post {
+                            mapView.controller.setCenter(myLocation)
+                        }
+                    }
+                }
+                //DistinationMarker
+
+                if (lat != null && lon != null) {
                     marker.position = GeoPoint(lat, lon)
                     marker.title = "Distination"
                     marker.icon = distinationIcon
                     mapView.overlays.add(marker)
                 }
 
-                locationOverlay.enableMyLocation()
-                locationOverlay.enableFollowLocation()
-                locationOverlay.runOnFirstFix {
-                    val myLocation = locationOverlay.myLocation
-                    if (myLocation != null) {
-                        mapView.post {
-                            mapView.controller.setCenter(myLocation)
-                        }
-                    }
-                }
+
 
                 mapView.overlays.add(locationOverlay)
 
