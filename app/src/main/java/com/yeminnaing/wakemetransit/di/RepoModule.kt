@@ -1,6 +1,8 @@
 package com.yeminnaing.wakemetransit.di
 
+import com.yeminnaing.wakemetransit.datalayer.repositories.RouteRepoImpl
 import com.yeminnaing.wakemetransit.datalayer.repositories.SearchRepoImpl
+import com.yeminnaing.wakemetransit.domainlayer.repositorie.RouteRepository
 import com.yeminnaing.wakemetransit.domainlayer.repositorie.SearchRepository
 import dagger.Binds
 import dagger.Module
@@ -15,4 +17,9 @@ abstract class RepoModule {
     abstract fun bindSearchRepoImpl(
         mSearchRepoImpl : SearchRepoImpl
     ): SearchRepository
+
+    @Binds
+    abstract fun bindRouteRepoImpl(
+        mRouteRepoImpl: RouteRepoImpl
+    ): RouteRepository
 }

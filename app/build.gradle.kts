@@ -57,7 +57,6 @@ dependencies {
 
     //OsmMap
     implementation(libs.osmdroid.android)
-    implementation(libs.osmdroid.bonus.pack)
 
 
     //Location

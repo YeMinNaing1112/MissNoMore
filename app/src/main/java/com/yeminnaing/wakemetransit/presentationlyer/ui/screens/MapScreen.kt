@@ -19,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,13 +32,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.yeminnaing.wakemetransit.R
+import com.yeminnaing.wakemetransit.domainlayer.model.RouteModel
 import com.yeminnaing.wakemetransit.presentationlyer.navigations.MissNoMoreDestinations
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
@@ -49,10 +53,20 @@ fun MapScreen(
     lon: Double?,
     navHostController: NavHostController,
 ) {
+    val viewModel: MapScreenViewModel = hiltViewModel()
+    val route by viewModel.route.collectAsState()
     MapScreenDesign(
         modifier = modifier, lat,
         lon,
-        navigateToSearchScreen = { navHostController.navigate(MissNoMoreDestinations.SearchScreenDestination) }
+        navigateToSearchScreen = {
+            navHostController.navigate(MissNoMoreDestinations.SearchScreenDestination)
+        },
+        route,
+        getRoute = { startLat, startLon, endLat, endLon ->
+            viewModel.getRoute(
+                startLat, startLon, endLat, endLon
+            )
+        }
     )
 }
 
@@ -62,6 +76,8 @@ fun MapScreenDesign(
     modifier: Modifier = Modifier, lat: Double?,
     lon: Double?,
     navigateToSearchScreen: () -> Unit,
+    route: RouteModel?,
+    getRoute: (startLat: Double, startLon: Double, endLat: Double, endLon: Double) -> Unit,
 ) {
     val context = LocalContext.current
     var hasLocationPermission by remember {
@@ -89,7 +105,8 @@ fun MapScreenDesign(
     ) {
 
         AndroidView(
-            modifier = modifier.fillMaxSize(), factory = {
+            modifier = modifier.fillMaxSize(),
+            factory = {
                 val mapView = MapView(context)
 
                 mapView.setMultiTouchControls(true)
@@ -119,6 +136,13 @@ fun MapScreenDesign(
                             mapView.zoomToBoundingBox(boundingBox, true, 150)
                         }
 
+                        getRoute(
+                            myLocation.latitude,
+                            myLocation.longitude,
+                            lat,
+                            lon,
+                        )
+
                     } else if (myLocation != null) {
                         mapView.post {
                             mapView.controller.setCenter(myLocation)
@@ -134,12 +158,18 @@ fun MapScreenDesign(
                     mapView.overlays.add(marker)
                 }
 
-
-
                 mapView.overlays.add(locationOverlay)
 
                 mapView
-            })
+            }
+
+        , update = {mapView ->
+                //draw PolyLine
+                route?.let {
+                    drawRoute(mapView, it)
+                }
+            }
+        )
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -161,12 +191,30 @@ fun MapScreenDesign(
 }
 
 
+fun drawRoute(
+    mapView: MapView,
+    route: RouteModel,
+) {
+    val getPoint = route.points.map {
+        GeoPoint(it.first, it.second)
+    }
+
+    val polyLine = Polyline().apply {
+        setPoints(getPoint)
+        outlinePaint.color = android.graphics.Color.BLUE
+        outlinePaint.strokeWidth = 8f
+    }
+    mapView.overlays.add(polyLine)
+    mapView.invalidate()
+}
+
 @Preview
 @Composable
 private fun MapScreenPreview() {
     MapScreenDesign(
-        modifier = Modifier, lat = null,
-        lon = null,
-        navigateToSearchScreen = {}
+        lat = null, lon = null,
+        navigateToSearchScreen = {},
+        route = null,
+        getRoute = { _, _, _, _ -> }
     )
 }
