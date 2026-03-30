@@ -1,9 +1,7 @@
 package com.yeminnaing.wakemetransit.presentationlyer.ui.screens
 
-import android.util.Log.v
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.yeminnaing.wakemetransit.domainlayer.model.RouteModel
 import com.yeminnaing.wakemetransit.domainlayer.usecases.route.GetRouteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,19 +19,19 @@ class MapScreenViewModel @Inject constructor(
     val route = _route.asStateFlow()
 
     fun getRoute(
-        startLat:Double,
-        startLon:Double,
-        endLat:Double,
-        endLon: Double
-    ){
+        startLat: Double,
+        startLon: Double,
+        endLat: Double,
+        endLon: Double,
+    ) {
         viewModelScope.launch {
-           try {
-               val result= routeUserCase.invoke(startLat,startLon,endLat,endLon)
+            try {
+                val result = routeUserCase.invoke(startLat, startLon, endLat, endLon)
 
-               _route.value=result
-           }catch (e: Exception){
-               e.printStackTrace()
-           }
+                _route.value = result
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }
