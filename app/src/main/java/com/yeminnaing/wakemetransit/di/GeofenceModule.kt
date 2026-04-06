@@ -20,11 +20,6 @@ abstract class GeofenceModule {
         impl: LocationTrackerImpl
     ): LocationTracker
 
-    @Binds
-    @Singleton
-    abstract fun bindNotificationHelper(
-        helper : NotificationHelper
-    ): NotificationHelper
 }
 
 

@@ -6,10 +6,11 @@ import android.content.Context
 import android.media.MediaPlayer
 import androidx.core.app.NotificationCompat
 import com.yeminnaing.wakemetransit.R
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 class NotificationHelper @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
 ) {
     private var mediaPlayer: MediaPlayer? = null
 
@@ -43,11 +44,17 @@ class NotificationHelper @Inject constructor(
         val notification = NotificationCompat.Builder(context, channelId)
             .setContentTitle("Wake Up")
             .setContentText("You are going to reach your stop")
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .build()
-//            .setSmallIcon()
+
 
         manager.notify(1, notification)
     }
 
+    fun stopAlarm() {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+    }
 
 }

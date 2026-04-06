@@ -1,5 +1,6 @@
 package com.yeminnaing.wakemetransit.core.geofence
 
+import android.location.Location
 import androidx.compose.ui.geometry.CornerRadius
 import com.yeminnaing.wakemetransit.core.location.LocationTracker
 import kotlinx.coroutines.flow.Flow
@@ -12,12 +13,12 @@ class GeofenceUseCase @Inject constructor(
      private val tracker : LocationTracker
 ) {
     fun monitor (
-        destination : GeoPoint,
+        destination : Location,
         radius: Double = 100.00
     ): Flow<Boolean>{
         return tracker.getLocationUpdate()
             .map { current ->
-                 val  distance =  current.distanceToAsDouble(destination)
+                 val  distance =  current.distanceTo(destination)
 
                 distance <= radius
             }

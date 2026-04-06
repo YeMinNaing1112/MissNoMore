@@ -37,6 +37,7 @@ import androidx.navigation.NavHostController
 import com.yeminnaing.wakemetransit.R
 import com.yeminnaing.wakemetransit.domainlayer.model.RouteModel
 import com.yeminnaing.wakemetransit.presentationlyer.navigations.MissNoMoreDestinations
+import com.yeminnaing.wakemetransit.presentationlyer.utils.startService
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -130,7 +131,7 @@ fun MapScreenDesign(
 
                     if (lat != null && lon != null) {
                         val boundingBox = BoundingBox.fromGeoPoints(
-                            listOf<GeoPoint>(myLocation, marker.position)
+                            listOf(myLocation, GeoPoint(lat,lon))
                         )
                         mapView.post {
                             mapView.zoomToBoundingBox(boundingBox, true, 150)
@@ -141,6 +142,13 @@ fun MapScreenDesign(
                             myLocation.longitude,
                             lat,
                             lon,
+                        )
+
+                       //startService
+                        startService(
+                            context,
+                            lat,
+                            lon
                         )
 
                     } else if (myLocation != null) {
@@ -198,6 +206,7 @@ fun drawRoute(
     val getPoint = route.points.map {
         GeoPoint(it.first, it.second)
     }
+    mapView.overlays.removeAll { it is Polyline }
 
     val polyLine = Polyline().apply {
         setPoints(getPoint)
