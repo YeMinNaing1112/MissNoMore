@@ -1,7 +1,6 @@
 package com.yeminnaing.wakemetransit.datalayer.remote
 
 import retrofit2.http.GET
-import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface NominatimApi {
@@ -10,5 +9,6 @@ interface NominatimApi {
     suspend fun searchPlace(
         @Query("q") query: String,
         @Query("format") format: String = "jsonv2",
+        @Query( "accept-language") language: String = "en",
     ): List<NominatimDto>
 }
