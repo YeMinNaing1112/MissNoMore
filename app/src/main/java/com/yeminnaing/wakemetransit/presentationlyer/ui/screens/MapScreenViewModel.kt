@@ -14,8 +14,8 @@ import javax.inject.Inject
 class MapScreenViewModel @Inject constructor(
     private val routeUserCase: GetRouteUseCase,
 ) : ViewModel() {
+    //Route
     private val _route = MutableStateFlow<RouteModel?>(null)
-
     val route = _route.asStateFlow()
 
     fun getRoute(

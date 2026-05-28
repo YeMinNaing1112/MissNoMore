@@ -18,6 +18,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -90,6 +91,10 @@ fun MapScreenDesign(
         )
     }
 
+    var serviceStarted by remember {
+        mutableStateOf(false)
+    }
+
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -104,6 +109,18 @@ fun MapScreenDesign(
     Box(
         modifier = modifier.fillMaxSize()
     ) {
+        val handler = remember {
+            android.os.Handler(
+                android.os.Looper.getMainLooper()
+            )
+        }
+
+
+        DisposableEffect(Unit) {
+            onDispose {
+                handler.removeCallbacksAndMessages(null)
+            }
+        }
 
         AndroidView(
             modifier = modifier.fillMaxSize(),
@@ -129,9 +146,9 @@ fun MapScreenDesign(
                 locationOverlay.runOnFirstFix {
                     val myLocation = locationOverlay.myLocation
 
-                    if (lat != null && lon != null) {
+                    if (lat != null && lon != null && myLocation != null) {
                         val boundingBox = BoundingBox.fromGeoPoints(
-                            listOf(myLocation, GeoPoint(lat,lon))
+                            listOf(myLocation, GeoPoint(lat, lon))
                         )
                         mapView.post {
                             mapView.zoomToBoundingBox(boundingBox, true, 150)
@@ -143,14 +160,16 @@ fun MapScreenDesign(
                             lat,
                             lon,
                         )
+                        if (!serviceStarted) {
 
-                       //startService
-                        startService(
-                            context,
-                            lat,
-                            lon
-                        )
+                            startService(
+                                context,
+                                lat,
+                                lon
+                            )
 
+                            serviceStarted = true
+                        }
                     } else if (myLocation != null) {
                         mapView.post {
                             mapView.controller.setCenter(myLocation)
@@ -163,15 +182,37 @@ fun MapScreenDesign(
                     marker.position = GeoPoint(lat, lon)
                     marker.title = "Distination"
                     marker.icon = distinationIcon
+                    mapView.overlays.removeAll { it is Marker }
                     mapView.overlays.add(marker)
                 }
 
                 mapView.overlays.add(locationOverlay)
+                //Live Update & refresh route
+
+                val runnable = object : Runnable {
+                    override fun run() {
+                        val mylocation = locationOverlay.myLocation
+                        if (
+                            mylocation != null &&
+                            lat != null &&
+                            lon != null
+                        ) {
+
+                            getRoute(
+                                mylocation.latitude,
+                                mylocation.longitude,
+                                lat, lon
+                            )
+                        }
+                        handler.postDelayed(this, 2000)
+                    }
+
+                }
+                handler.post(runnable)
+
 
                 mapView
-            }
-
-        , update = {mapView ->
+            }, update = { mapView ->
                 //draw PolyLine
                 route?.let {
                     drawRoute(mapView, it)
