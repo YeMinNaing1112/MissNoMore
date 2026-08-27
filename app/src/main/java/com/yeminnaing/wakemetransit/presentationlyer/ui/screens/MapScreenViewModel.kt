@@ -34,4 +34,7 @@ class MapScreenViewModel @Inject constructor(
             }
         }
     }
+    fun clearRoute(){
+        _route.value=null
+    }
 }

@@ -10,5 +10,5 @@ interface SearchRepository {
 
     fun getRecentPlace(): Flow<List<PlaceModel>>
 
-    suspend fun deleteRecentPlace(place: PlaceModel)
+    suspend fun deleteRecentPlace(id:String)
 }

@@ -46,8 +46,8 @@ class SearchRepoImpl @Inject constructor(
         }
     }
 
-    override suspend fun deleteRecentPlace(place: PlaceModel) {
-        //
+    override suspend fun deleteRecentPlace(id:String) {
+           dao.clearRecent(id)
     }
 
 }

@@ -15,7 +15,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.materialIcon
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,8 +37,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.R
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -75,6 +80,9 @@ fun SearchScreen(modifier: Modifier = Modifier, navHost: NavHostController) {
         recentPlace,
         addToRecent = {
             viewModel.addRecentPlace(it)
+        },
+        deleteRecent = {
+            viewModel.deleteRecentPlace(it)
         }
     )
 }
@@ -88,6 +96,7 @@ fun SearchScreenDesign(
     navigateToMapScreen: (place: PlaceModel) -> Unit,
     recentPlace: List<PlaceModel>,
     addToRecent: (place: PlaceModel) -> Unit,
+    deleteRecent: (id:String)-> Unit
 ) {
 
 
@@ -129,11 +138,28 @@ fun SearchScreenDesign(
                     .padding(start = 16.dp, end = 16.dp)
             ) {
                 items(items = recentPlace) { place ->
-                    Text(
-                        text = place.name,
-                        modifier = modifier.clickable {
-                                 selectPlace=place
-                        })
+
+                    Row(modifier.fillMaxWidth()) {
+                        Text(
+                            text = place.name,
+                            modifier = modifier
+
+                                .weight(1f)
+                                .clickable {
+                                selectPlace = place
+                            },
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis)
+
+
+                        Icon(imageVector = Icons.Filled.Cancel, contentDescription = "delete the recent search",
+                            modifier = modifier.clickable{
+                                  deleteRecent(place.id)
+                            }
+                            )
+
+                    }
+
                 }
             }
             selectPlace?.let { it->
@@ -174,10 +200,21 @@ fun SearchScreenDesign(
                         Text(
                             text = place.name,
                             modifier = modifier.clickable {
-                                navigateToMapScreen(place)
+//                                navigateToMapScreen(place)
+                                selectPlace=place
                                 addToRecent(place)
                             })
                     }
+                }
+
+                selectPlace?.let { it->
+                    BottomSheet(
+                        modifier=modifier,
+                        onDismiss = {
+                            selectPlace=null
+                        },
+                        name = it.name,
+                    ) { navigateToMapScreen(it)}
                 }
 
             }
@@ -278,6 +315,7 @@ private fun SearchScreenDesignPre() {
         search = {},
         navigateToMapScreen = {},
         recentPlace = listOf(),
-        addToRecent = {}
+        addToRecent = {},
+        deleteRecent = {}
     )
 }

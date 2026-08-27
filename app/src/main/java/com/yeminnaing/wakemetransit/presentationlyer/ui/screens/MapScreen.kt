@@ -39,6 +39,8 @@ import com.yeminnaing.wakemetransit.R
 import com.yeminnaing.wakemetransit.domainlayer.model.RouteModel
 import com.yeminnaing.wakemetransit.presentationlyer.navigations.MissNoMoreDestinations
 import com.yeminnaing.wakemetransit.presentationlyer.utils.startService
+import com.yeminnaing.wakemetransit.presentationlyer.utils.stopService
+import kotlinx.coroutines.delay
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -57,19 +59,15 @@ fun MapScreen(
 ) {
     val viewModel: MapScreenViewModel = hiltViewModel()
     val route by viewModel.route.collectAsState()
-    MapScreenDesign(
-        modifier = modifier, lat,
-        lon,
-        navigateToSearchScreen = {
-            navHostController.navigate(MissNoMoreDestinations.SearchScreenDestination)
-        },
-        route,
-        getRoute = { startLat, startLon, endLat, endLon ->
-            viewModel.getRoute(
-                startLat, startLon, endLat, endLon
-            )
-        }
-    )
+    MapScreenDesign(modifier = modifier, lat, lon, navigateToSearchScreen = {
+        navHostController.navigate(MissNoMoreDestinations.SearchScreenDestination)
+    }, route, getRoute = { startLat, startLon, endLat, endLon ->
+        viewModel.getRoute(
+            startLat, startLon, endLat, endLon
+        )
+    }, clearRoute = {
+        viewModel.clearRoute()
+    })
 }
 
 
@@ -80,8 +78,11 @@ fun MapScreenDesign(
     navigateToSearchScreen: () -> Unit,
     route: RouteModel?,
     getRoute: (startLat: Double, startLon: Double, endLat: Double, endLon: Double) -> Unit,
+    clearRoute: () -> Unit,
 ) {
     val context = LocalContext.current
+
+    var trackedDestinations by remember { mutableStateOf<Pair<Double, Double>?>(null) }
     var hasLocationPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -90,9 +91,9 @@ fun MapScreenDesign(
             ) == PackageManager.PERMISSION_GRANTED
         )
     }
-
-    var serviceStarted by remember {
-        mutableStateOf(false)
+    var locationOverLay by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
+    val distinationIcon = remember {
+        ContextCompat.getDrawable(context, R.drawable.destination_blue)
     }
 
     val launcher = rememberLauncherForActivityResult(
@@ -104,6 +105,17 @@ fun MapScreenDesign(
     LaunchedEffect(Unit) {
         if (!hasLocationPermission) {
             launcher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+    //Draw Route
+    LaunchedEffect(trackedDestinations) {
+        val dest = trackedDestinations ?: return@LaunchedEffect
+        while (true) {
+            val myLocation = locationOverLay?.myLocation
+            if (myLocation != null) {
+                getRoute(myLocation.latitude, myLocation.longitude, dest.first, dest.second)
+            }
+            delay(2000)
         }
     }
     Box(
@@ -122,110 +134,109 @@ fun MapScreenDesign(
             }
         }
 
-        AndroidView(
-            modifier = modifier.fillMaxSize(),
-            factory = {
-                val mapView = MapView(context)
+        AndroidView(modifier = modifier.fillMaxSize(), factory = {
+            val mapView = MapView(context)
 
-                mapView.setMultiTouchControls(true)
-                mapView.controller.setZoom(15.0)
+            mapView.setMultiTouchControls(true)
+            mapView.controller.setZoom(15.0)
 
-                val locationOverlay = MyLocationNewOverlay(
-                    GpsMyLocationProvider(context), mapView
-                )
-                val personIcon = ContextCompat.getDrawable(context, R.drawable.currenlocation_blue)
-                val distinationIcon =
-                    ContextCompat.getDrawable(context, R.drawable.destination_blue)
+            val overlay = MyLocationNewOverlay(
+                GpsMyLocationProvider(context), mapView
+            )
+            locationOverLay = overlay //Hang it to Compose State
 
-                personIcon?.let {
-                    val bitmap = it.toBitmap()
-                    locationOverlay.setDirectionIcon(bitmap)
-                }
-                val marker = Marker(mapView)
-                locationOverlay.enableMyLocation()
-                locationOverlay.runOnFirstFix {
-                    val myLocation = locationOverlay.myLocation
+            val personIcon = ContextCompat.getDrawable(context, R.drawable.currenlocation_blue)
+            val distinationIcon = distinationIcon
 
-                    if (lat != null && lon != null && myLocation != null) {
-                        val boundingBox = BoundingBox.fromGeoPoints(
-                            listOf(myLocation, GeoPoint(lat, lon))
-                        )
-                        mapView.post {
-                            mapView.zoomToBoundingBox(boundingBox, true, 150)
-                        }
+            personIcon?.let {
+                val bitmap = it.toBitmap()
+                overlay.setDirectionIcon(bitmap)
+            }
+            val marker = Marker(mapView)
+            overlay.enableMyLocation()
+            overlay.runOnFirstFix {
+                val myLocation = overlay.myLocation
 
-                        getRoute(
-                            myLocation.latitude,
-                            myLocation.longitude,
-                            lat,
-                            lon,
-                        )
-                        if (!serviceStarted) {
-
-                            startService(
-                                context,
-                                lat,
-                                lon
-                            )
-
-                            serviceStarted = true
-                        }
-                    } else if (myLocation != null) {
-                        mapView.post {
-                            mapView.controller.setCenter(myLocation)
-                        }
-                    }
-                }
-                //DistinationMarker
-
-                if (lat != null && lon != null) {
-                    marker.position = GeoPoint(lat, lon)
-                    marker.title = "Distination"
-                    marker.icon = distinationIcon
-                    mapView.overlays.removeAll { it is Marker }
-                    mapView.overlays.add(marker)
-                }
-
-                mapView.overlays.add(locationOverlay)
-                //Live Update & refresh route
-
-                val runnable = object : Runnable {
-                    override fun run() {
-                        val mylocation = locationOverlay.myLocation
-                        if (
-                            mylocation != null &&
-                            lat != null &&
-                            lon != null
-                        ) {
-
-                            getRoute(
-                                mylocation.latitude,
-                                mylocation.longitude,
-                                lat, lon
-                            )
-                        }
-                        handler.postDelayed(this, 2000)
+                if (lat != null && lon != null && myLocation != null) {
+                    val boundingBox = BoundingBox.fromGeoPoints(
+                        listOf(myLocation, GeoPoint(lat, lon))
+                    )
+                    mapView.post {
+                        mapView.zoomToBoundingBox(boundingBox, true, 150)
                     }
 
-                }
-                handler.post(runnable)
-
-
-                mapView
-            }, update = { mapView ->
-                //draw PolyLine
-                route?.let {
-                    drawRoute(mapView, it)
+                    getRoute(
+                        myLocation.latitude,
+                        myLocation.longitude,
+                        lat,
+                        lon,
+                    )
+                    if (trackedDestinations != lat to lon) {
+                        startService(context, lat, lon)
+                        trackedDestinations = lat to lon
+                    }
+                } else if (myLocation != null) {
+                    mapView.post {
+                        mapView.controller.setCenter(myLocation)
+                    }
                 }
             }
-        )
+            //DistinationMarker
+
+            if (lat != null && lon != null) {
+                marker.position = GeoPoint(lat, lon)
+                marker.title = "Distination"
+                marker.icon = distinationIcon
+                mapView.overlays.removeAll { it is Marker }
+                mapView.overlays.add(marker)
+            }
+
+            mapView.overlays.add(overlay)
+            //Live Update & refresh route
+
+            val runnable = object : Runnable {
+                override fun run() {
+                    val myLocation = overlay.myLocation
+                    if (myLocation != null && lat != null && lon != null) {
+
+                        getRoute(
+                            myLocation.latitude, myLocation.longitude, lat, lon
+                        )
+                    }
+                    handler.postDelayed(this, 2000)
+                }
+
+            }
+            handler.post(runnable)
+
+
+            mapView
+        }, update = { mapView ->
+            // Draw Polyline and Add Destination Marker
+            mapView.overlays.removeAll { it is Marker }
+            trackedDestinations?.let { (lat, lon) ->
+                val marker = Marker(mapView).apply {
+                    position = GeoPoint(lat, lon)
+                    title = "Destination"
+                    icon = distinationIcon
+                }
+                mapView.overlays.add(marker)
+            }
+            //Remove Polyline if there is no Destination
+            mapView.overlays.removeAll { it is Polyline }
+            if (trackedDestinations != null) {
+                route?.let { drawRoute(mapView, it) }
+            }
+
+            mapView.invalidate()
+        })
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
                 .align(Alignment.TopCenter)
-                .clickable { navigateToSearchScreen() },
-            shape = RoundedCornerShape(30.dp)
+                .clickable { navigateToSearchScreen() }, shape = RoundedCornerShape(30.dp)
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
@@ -234,6 +245,27 @@ fun MapScreenDesign(
                 Icon(Icons.Default.Search, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text("Search destination")
+            }
+        }
+
+
+        if (trackedDestinations != null) {
+            Card(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .align(Alignment.BottomCenter)
+                    .clickable {
+                        stopService(context)
+                        trackedDestinations = null
+                        clearRoute()
+                    }, shape = RoundedCornerShape(30.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Cancel tracking")
+                }
             }
         }
     }
@@ -262,9 +294,10 @@ fun drawRoute(
 @Composable
 private fun MapScreenPreview() {
     MapScreenDesign(
-        lat = null, lon = null,
+        lat = null,
+        lon = null,
         navigateToSearchScreen = {},
         route = null,
-        getRoute = { _, _, _, _ -> }
-    )
+        getRoute = { _, _, _, _ -> },
+        clearRoute = {})
 }

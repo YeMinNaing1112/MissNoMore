@@ -13,6 +13,6 @@ interface RecentPlaceDao {
 
     @Query("SELECT * FROM recent_place LIMIT 10")
     fun getRecentPlace(): Flow<List<RecentPlaceEntity>>
-    @Query("DELETE FROM recent_place")
-    suspend fun clearRecent()
+    @Query("DELETE FROM recent_place WHERE id = :id")
+    suspend fun clearRecent(id: String)
 }

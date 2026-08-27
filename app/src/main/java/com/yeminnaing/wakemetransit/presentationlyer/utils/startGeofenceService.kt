@@ -11,9 +11,16 @@ fun startService(
     lon: Double
 ) {
     val intent = Intent(context, LocationService::class.java).apply {
-        putExtra("lat", lat)
-        putExtra("lon", lon)
+        action= LocationService.ACTION_START
+        putExtra(LocationService.EXTRA_LAT, lat)
+        putExtra(LocationService.EXTRA_LON, lon)
     }
 
     ContextCompat.startForegroundService(context, intent)
+}
+fun stopService(context: Context) {
+    val intent = Intent(context, LocationService::class.java).apply {
+        action = LocationService.ACTION_STOP
+    }
+    context.startService(intent)
 }

@@ -3,6 +3,7 @@ package com.yeminnaing.wakemetransit.presentationlyer.ui.screens
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yeminnaing.wakemetransit.domainlayer.model.PlaceModel
+import com.yeminnaing.wakemetransit.domainlayer.usecases.search.DeleteRecentPlacesUseCase
 import com.yeminnaing.wakemetransit.domainlayer.usecases.search.GetRecentPlaceUseCase
 import com.yeminnaing.wakemetransit.domainlayer.usecases.search.SaveRecentPlaceUseCase
 import com.yeminnaing.wakemetransit.domainlayer.usecases.search.SearchPlacesUseCase
@@ -23,6 +24,7 @@ class SearchScreenViewModel @Inject constructor(
     val mSearchPlaceUseCase: SearchPlacesUseCase,
     val mSaveRecentPlacesUseCase: SaveRecentPlaceUseCase,
     val mGetRecentPlaceUseCase: GetRecentPlaceUseCase,
+    val mDeleteRecentPlaceUseCase: DeleteRecentPlacesUseCase,
 ) : ViewModel() {
     private var searchQuery = MutableStateFlow("")
     private var _getPlaceSates = MutableStateFlow<GetPlaceStates>(GetPlaceStates.Empty)
@@ -43,6 +45,13 @@ class SearchScreenViewModel @Inject constructor(
         viewModelScope.launch {
             mSaveRecentPlacesUseCase.invoke(place)
         }
+    }
+
+    fun deleteRecentPlace(id:String){
+        viewModelScope.launch {
+            mDeleteRecentPlaceUseCase(id)
+        }
+
     }
 
     @OptIn(FlowPreview::class)
