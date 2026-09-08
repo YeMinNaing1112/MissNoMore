@@ -7,13 +7,16 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.yeminnaing.wakemetransit.presentationlyer.ui.screens.MapScreen
 import com.yeminnaing.wakemetransit.presentationlyer.ui.screens.SearchScreen
-
+import kotlinx.serialization.Serializable
 @Composable
-fun MissNoMoreNavGraph() {
+fun MissNoMoreNavGraph(startLat: Double? = null, startLon: Double? = null) {
     val navController = rememberNavController()
     NavHost(
         navController = navController,
-        startDestination = MissNoMoreDestinations.MapScreenDestination()
+        startDestination = MissNoMoreDestinations.MapScreenDestination(
+            lat = startLat,
+            lon = startLon
+        )
     ) {
         composable<MissNoMoreDestinations.MapScreenDestination> { backStack ->
             val mapScreen: MissNoMoreDestinations.MapScreenDestination = backStack.toRoute()
@@ -28,3 +31,4 @@ fun MissNoMoreNavGraph() {
         }
     }
 }
+

@@ -6,11 +6,11 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.location.Location
-import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.core.app.NotificationCompat
 import com.yeminnaing.wakemetransit.R
 import com.yeminnaing.wakemetransit.core.NotificationHelper
 import com.yeminnaing.wakemetransit.core.geofence.GeofenceUseCase
+import com.yeminnaing.wakemetransit.presentationlyer.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +18,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import org.osmdroid.util.GeoPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -101,18 +100,28 @@ class LocationService : Service() {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(channel)
 
-        val stopIntent= Intent(this, LocationService::class.java).apply { action=ACTION_STOP }
+        val stopIntent = Intent(this, LocationService::class.java).apply { action = ACTION_STOP }
 
         val stopPendingIntent = PendingIntent.getService(
-            this,0,stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            this, 0, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID  )
+        val contentIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+        val contentPendingIntent = PendingIntent.getActivity(
+            this, 0, contentIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Tracking location")
             .setContentText("Monitoring your stop...")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setOngoing(true)
-            .addAction(R.drawable.ic_launcher_foreground,"cancel",stopPendingIntent)
+            .setContentIntent(contentPendingIntent)
+            .addAction(R.drawable.ic_launcher_foreground, "cancel", stopPendingIntent)
             .build()
 
         startForeground(NOTIFICATION_ID, notification)
