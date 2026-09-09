@@ -71,13 +71,15 @@ fun MapScreen(
 ) {
     val viewModel: MapScreenViewModel = hiltViewModel()
     val route by viewModel.route.collectAsState()
+    val tracking by viewModel.isTracking.collectAsState()
+
     MapScreenDesign(modifier = modifier, lat, lon, navigateToSearchScreen = {
         navHostController.navigate(MissNoMoreDestinations.SearchScreenDestination)
     }, route, getRoute = { startLat, startLon, endLat, endLon ->
         viewModel.getRoute(
             startLat, startLon, endLat, endLon
         )
-    }, clearRoute = {
+    }, isTracking = tracking, clearRoute = {
         viewModel.clearRoute()
     })
 }
@@ -90,6 +92,7 @@ fun MapScreenDesign(
     navigateToSearchScreen: () -> Unit,
     route: RouteModel?,
     getRoute: (startLat: Double, startLon: Double, endLat: Double, endLon: Double) -> Unit,
+    isTracking: Boolean,
     clearRoute: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -137,6 +140,15 @@ fun MapScreenDesign(
                 getRoute(myLocation.latitude, myLocation.longitude, dest.first, dest.second)
             }
             delay(2000)
+        }
+    }
+
+    //Cancel Route and Destiantion by Notification
+    LaunchedEffect(isTracking) {
+        if (!isTracking) {
+            trackedDestinations = null
+            clearRoute()
+            showCancelTrackingSheet = false
         }
     }
     Box(
@@ -288,10 +300,6 @@ fun MapScreenDesign(
             if (!isFollowing) {
                 FloatingActionButton(
                     onClick = {
-                        Log.d(
-                            "RecenterDebug",
-                            "mapView=$mapView myLocation=${locationOverLay?.myLocation}"
-                        )
                         val myLocation = locationOverLay?.myLocation
                         if (myLocation != null) {
                             mapView?.controller?.animateTo(
@@ -315,7 +323,6 @@ fun MapScreenDesign(
 
         // Cancel Tracking Dialog Box to Cancel the Destination , Service and Route
         LaunchedEffect(trackedDestinations) {
-            Log.d("TrackingDebug", "trackedDestinations = $trackedDestinations")
             if (trackedDestinations != null) {
                 showCancelTrackingSheet = true
             }
@@ -410,5 +417,6 @@ private fun MapScreenPreview() {
         navigateToSearchScreen = {},
         route = null,
         getRoute = { _, _, _, _ -> },
+        isTracking = true,
         clearRoute = {})
 }

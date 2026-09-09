@@ -11,6 +11,7 @@ import com.yeminnaing.wakemetransit.R
 import com.yeminnaing.wakemetransit.core.NotificationHelper
 import com.yeminnaing.wakemetransit.core.geofence.GeofenceUseCase
 import com.yeminnaing.wakemetransit.presentationlyer.MainActivity
+import com.yeminnaing.wakemetransit.presentationlyer.utils.TrackingStateHolder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +32,10 @@ class LocationService : Service() {
         SupervisorJob() +
                 Dispatchers.IO
     )
+
+    @Inject
+    lateinit var trackingStateHolder: TrackingStateHolder
+
     private var monitoringJob: Job? = null
 
     companion object {
@@ -58,6 +63,7 @@ class LocationService : Service() {
             return START_NOT_STICKY
         }
         startForeground()
+        trackingStateHolder.setTracking(true)
         val destination = Location("").apply {
             latitude = lat
             longitude = lon
@@ -81,6 +87,7 @@ class LocationService : Service() {
     private fun stopTracking() {
         monitoringJob?.cancel()
         stopForeground(STOP_FOREGROUND_REMOVE)
+        trackingStateHolder.setTracking(false)
         stopSelf()
     }
 

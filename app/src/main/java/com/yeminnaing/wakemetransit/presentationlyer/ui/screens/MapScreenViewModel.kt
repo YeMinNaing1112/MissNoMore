@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yeminnaing.wakemetransit.domainlayer.model.RouteModel
 import com.yeminnaing.wakemetransit.domainlayer.usecases.route.GetRouteUseCase
+import com.yeminnaing.wakemetransit.presentationlyer.utils.TrackingStateHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -13,10 +15,13 @@ import javax.inject.Inject
 @HiltViewModel
 class MapScreenViewModel @Inject constructor(
     private val routeUserCase: GetRouteUseCase,
+    private val trackingStateHolder: TrackingStateHolder
 ) : ViewModel() {
     //Route
     private val _route = MutableStateFlow<RouteModel?>(null)
     val route = _route.asStateFlow()
+
+    val isTracking: StateFlow<Boolean> =  trackingStateHolder.isTracking
 
     fun getRoute(
         startLat: Double,
