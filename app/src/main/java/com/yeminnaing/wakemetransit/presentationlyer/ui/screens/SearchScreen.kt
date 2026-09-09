@@ -289,6 +289,7 @@ fun CancelTrackingSheet(
                         containerColor = colorResource(R.color.Blue)
                     ),
                     onClick = {
+                        onDismiss()
                         navigateToHomeScreen()
                     }
                 ) {

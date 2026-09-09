@@ -4,7 +4,6 @@ import android.content.pm.PackageManager
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,10 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -36,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -50,6 +50,9 @@ import com.yeminnaing.wakemetransit.presentationlyer.navigations.MissNoMoreDesti
 import com.yeminnaing.wakemetransit.presentationlyer.utils.startService
 import com.yeminnaing.wakemetransit.presentationlyer.utils.stopService
 import kotlinx.coroutines.delay
+import org.osmdroid.events.MapListener
+import org.osmdroid.events.ScrollEvent
+import org.osmdroid.events.ZoomEvent
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -90,6 +93,8 @@ fun MapScreenDesign(
     clearRoute: () -> Unit,
 ) {
     val context = LocalContext.current
+
+    var mapView by remember { mutableStateOf<MapView?>(null) }
 
     var isFollowing by remember { mutableStateOf(true) }
 
@@ -151,15 +156,15 @@ fun MapScreenDesign(
         }
 
         AndroidView(modifier = modifier.fillMaxSize(), factory = {
-            val mapView = MapView(context)
-
-            mapView.setMultiTouchControls(true)
-            mapView.controller.setZoom(15.0)
+            val map = MapView(context)
+            mapView = map
+            map.setMultiTouchControls(true)
+            map.controller.setZoom(15.0)
 
             val overlay = MyLocationNewOverlay(
-                GpsMyLocationProvider(context), mapView
+                GpsMyLocationProvider(context), map
             )
-            locationOverLay = overlay //Hang it to Compose State
+            locationOverLay = overlay
 
             val personIcon = ContextCompat.getDrawable(context, R.drawable.currenlocation_blue)
             val distinationIcon = distinationIcon
@@ -168,9 +173,23 @@ fun MapScreenDesign(
                 val bitmap = it.toBitmap()
                 overlay.setDirectionIcon(bitmap)
             }
-            val marker = Marker(mapView)
+            val marker = Marker(map)
             overlay.enableMyLocation()
-            overlay.enableFollowLocation()
+
+
+            map.addMapListener(object : MapListener {
+                override fun onScroll(event: ScrollEvent?): Boolean {
+                    if (!overlay.isFollowLocationEnabled) {
+                        isFollowing = false
+                    }
+                    return false
+                }
+
+                override fun onZoom(event: ZoomEvent?): Boolean {
+                    return false
+                }
+
+            })
             overlay.runOnFirstFix {
                 val myLocation = overlay.myLocation
 
@@ -178,8 +197,8 @@ fun MapScreenDesign(
                     val boundingBox = BoundingBox.fromGeoPoints(
                         listOf(myLocation, GeoPoint(lat, lon))
                     )
-                    mapView.post {
-                        mapView.zoomToBoundingBox(boundingBox, true, 150)
+                    map.post {
+                        map.zoomToBoundingBox(boundingBox, true, 150)
                     }
 
                     getRoute(
@@ -193,24 +212,22 @@ fun MapScreenDesign(
                         trackedDestinations = lat to lon
                     }
                 } else if (myLocation != null) {
-                    mapView.post {
-                        mapView.controller.setCenter(myLocation)
+                    map.post {
+                        map.controller.setCenter(myLocation)
                     }
                 }
             }
             //DistinationMarker
-
             if (lat != null && lon != null) {
                 marker.position = GeoPoint(lat, lon)
                 marker.title = "Distination"
                 marker.icon = distinationIcon
-                mapView.overlays.removeAll { it is Marker }
-                mapView.overlays.add(marker)
+                map.overlays.removeAll { it is Marker }
+                map.overlays.add(marker)
             }
+            map.overlays.add(overlay)
 
-            mapView.overlays.add(overlay)
-            //Live Update & refresh route
-
+            //Live Update & refresh route`
             val runnable = object : Runnable {
                 override fun run() {
                     val myLocation = overlay.myLocation
@@ -227,7 +244,7 @@ fun MapScreenDesign(
             handler.post(runnable)
 
 
-            mapView
+            map
         }, update = { mapView ->
             // Draw Polyline and Add Destination Marker
             mapView.overlays.removeAll { it is Marker }
@@ -247,21 +264,52 @@ fun MapScreenDesign(
 
             mapView.invalidate()
         })
-
-        Card(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
                 .align(Alignment.TopCenter)
-                .clickable { navigateToSearchScreen() }, shape = RoundedCornerShape(30.dp)
+                .fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .clickable { navigateToSearchScreen() }, shape = RoundedCornerShape(30.dp)
             ) {
-                Icon(Icons.Default.Search, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Search destination")
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Default.Search, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Search destination")
+                }
+            }
+            //FLowing the User Position
+            if (!isFollowing) {
+                FloatingActionButton(
+                    onClick = {
+                        Log.d(
+                            "RecenterDebug",
+                            "mapView=$mapView myLocation=${locationOverLay?.myLocation}"
+                        )
+                        val myLocation = locationOverLay?.myLocation
+                        if (myLocation != null) {
+                            mapView?.controller?.animateTo(
+                                myLocation,
+                                18.0,
+                                800L
+                            )
+                        }
+                        locationOverLay?.enableFollowLocation()
+                        isFollowing = true
+                    },
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(top = 16.dp, end = 16.dp)
+
+                ) {
+                    Icon(Icons.Default.MyLocation, contentDescription = "Recenter")
+                }
             }
         }
 
@@ -270,7 +318,8 @@ fun MapScreenDesign(
             Log.d("TrackingDebug", "trackedDestinations = $trackedDestinations")
             if (trackedDestinations != null) {
                 showCancelTrackingSheet = true
-            }}
+            }
+        }
         if (showCancelTrackingSheet) {
 
             CancelTrackingSheet(
@@ -283,10 +332,10 @@ fun MapScreenDesign(
                 }
             )
         }
+
     }
-
-
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
