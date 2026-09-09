@@ -1,6 +1,7 @@
 package com.yeminnaing.wakemetransit.presentationlyer.ui.screens
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,8 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.materialIcon
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -37,15 +38,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.R
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import com.yeminnaing.wakemetransit.R
 import com.yeminnaing.wakemetransit.domainlayer.model.PlaceModel
 import com.yeminnaing.wakemetransit.presentationlyer.navigations.MissNoMoreDestinations
 
@@ -96,7 +97,7 @@ fun SearchScreenDesign(
     navigateToMapScreen: (place: PlaceModel) -> Unit,
     recentPlace: List<PlaceModel>,
     addToRecent: (place: PlaceModel) -> Unit,
-    deleteRecent: (id:String)-> Unit
+    deleteRecent: (id: String) -> Unit,
 ) {
 
 
@@ -146,31 +147,34 @@ fun SearchScreenDesign(
 
                                 .weight(1f)
                                 .clickable {
-                                selectPlace = place
-                            },
+                                    selectPlace = place
+                                },
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis)
+                            overflow = TextOverflow.Ellipsis
+                        )
 
 
-                        Icon(imageVector = Icons.Filled.Cancel, contentDescription = "delete the recent search",
-                            modifier = modifier.clickable{
-                                  deleteRecent(place.id)
+                        Icon(
+                            imageVector = Icons.Filled.Cancel,
+                            contentDescription = "delete the recent search",
+                            modifier = modifier.clickable {
+                                deleteRecent(place.id)
                             }
-                            )
+                        )
 
                     }
 
                 }
             }
-            selectPlace?.let { it->
-                BottomSheet(
-                    modifier=modifier,
+            selectPlace?.let { it ->
+                CancelTrackingSheet(
+                    modifier = modifier,
                     onDismiss = {
-                        selectPlace=null
+                        selectPlace = null
                     },
                     name = it.name,
-                ) { navigateToMapScreen(it)}
-                }
+                ) { navigateToMapScreen(it) }
+            }
         }
 
         when (placeStates) {
@@ -201,20 +205,20 @@ fun SearchScreenDesign(
                             text = place.name,
                             modifier = modifier.clickable {
 //                                navigateToMapScreen(place)
-                                selectPlace=place
+                                selectPlace = place
                                 addToRecent(place)
                             })
                     }
                 }
 
-                selectPlace?.let { it->
-                    BottomSheet(
-                        modifier=modifier,
+                selectPlace?.let { it ->
+                    CancelTrackingSheet(
+                        modifier = modifier,
                         onDismiss = {
-                            selectPlace=null
+                            selectPlace = null
                         },
                         name = it.name,
-                    ) { navigateToMapScreen(it)}
+                    ) { navigateToMapScreen(it) }
                 }
 
             }
@@ -229,73 +233,79 @@ fun SearchScreenDesign(
 @SuppressLint("SuspiciousIndentation")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BottomSheet(
+fun CancelTrackingSheet(
     modifier: Modifier = Modifier,
-    onDismiss:()-> Unit,
+    onDismiss: () -> Unit,
     name: String,
     navigateToHomeScreen: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState()
 
-            ModalBottomSheet(
-            onDismissRequest = {
-                onDismiss()
-            },
-            sheetState = sheetState
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Ready for your trip?",
-                    style = MaterialTheme.typography.headlineSmall
-                )
+    ModalBottomSheet(
+        onDismissRequest = {
+            onDismiss()
+        },
+        sheetState = sheetState
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Ready for your trip?",
+                style = MaterialTheme.typography.headlineSmall
+            )
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "We'll alert you before your stop."
-                )
+            Text(
+                text = "We'll alert you before your stop."
+            )
 
-                Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-                Text("📍 $name ")
+            Text("📍 $name ")
 
 
-                Spacer(modifier = Modifier.height(24.dp))
-                Row(
-                    modifier = modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(
+                modifier = modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Button(
+                    modifier = modifier
+                        .weight(1F)
+                        .padding(end = 16.dp),
+                    border = BorderStroke(1.dp , color = colorResource(R.color.Blue)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(R.color.white)
+                    ),
+                    onClick = {
+                        onDismiss()
+                    }
                 ) {
-                    Button(
-                        modifier = modifier
-                            .weight(1F)
-                            .padding(end = 16.dp),
-                        onClick = {
-                            onDismiss()
-                        }
-                    ) {
-                        Text("Cancel")
-                    }
-                    Button(
-                        modifier = modifier.weight(2F),
-
-                        onClick = {
-                            navigateToHomeScreen()
-                        }
-                    ) {
-                        Text("Set Destination & Alarm")
-                    }
+                    Text("Cancel", color = colorResource(R.color.Blue))
                 }
-
-
+                Button(
+                    modifier = modifier.weight(2F),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(R.color.Blue)
+                    ),
+                    onClick = {
+                        navigateToHomeScreen()
+                    }
+                ) {
+                    Text("Set Destination & Alarm")
+                }
             }
+
+
         }
     }
+}
 
 
 @Preview
 @Composable
 private fun BottomSheetPrev() {
-    BottomSheet(onDismiss = {}, name = "Siam Pragon", navigateToHomeScreen = {})
+    CancelTrackingSheet(onDismiss = {}, name = "Siam Pragon", navigateToHomeScreen = {})
 }
 
 @Preview

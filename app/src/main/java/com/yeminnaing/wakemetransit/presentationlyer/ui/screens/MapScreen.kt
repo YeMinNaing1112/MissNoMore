@@ -1,21 +1,29 @@
 package com.yeminnaing.wakemetransit.presentationlyer.ui.screens
 
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -28,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -82,7 +91,14 @@ fun MapScreenDesign(
 ) {
     val context = LocalContext.current
 
+    var isFollowing by remember { mutableStateOf(true) }
+
+    var showCancelTrackingSheet by remember {
+        mutableStateOf(false)
+    }
+
     var trackedDestinations by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+
     var hasLocationPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -154,6 +170,7 @@ fun MapScreenDesign(
             }
             val marker = Marker(mapView)
             overlay.enableMyLocation()
+            overlay.enableFollowLocation()
             overlay.runOnFirstFix {
                 val myLocation = overlay.myLocation
 
@@ -248,27 +265,72 @@ fun MapScreenDesign(
             }
         }
 
+        // Cancel Tracking Dialog Box to Cancel the Destination , Service and Route
+        LaunchedEffect(trackedDestinations) {
+            Log.d("TrackingDebug", "trackedDestinations = $trackedDestinations")
+            if (trackedDestinations != null) {
+                showCancelTrackingSheet = true
+            }}
+        if (showCancelTrackingSheet) {
 
-        if (trackedDestinations != null) {
-            Card(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .align(Alignment.BottomCenter)
-                    .clickable {
-                        stopService(context)
-                        trackedDestinations = null
-                        clearRoute()
-                    }, shape = RoundedCornerShape(30.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("Cancel tracking")
+            CancelTrackingSheet(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                onCancelTracking = {
+                    stopService(context)
+                    trackedDestinations = null
+                    clearRoute()
+                    showCancelTrackingSheet = false
                 }
+            )
+        }
+    }
+
+
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CancelTrackingSheet(
+    modifier: Modifier = Modifier,
+    onCancelTracking: () -> Unit,
+) {
+    Log.d("TrackingDebug", "CancelTrackingSheet composing")
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(24.dp),
+        tonalElevation = 8.dp,
+        shadowElevation = 8.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 20.dp)
+        ) {
+            Text("Cancel tracking?", style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Are you sure you want to stop tracking this destination?",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = onCancelTracking,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Text("Cancel tracking")
             }
         }
     }
+}
+
+@Preview
+@Composable
+private fun CancelTrackingSheetPrev() {
+    CancelTrackingSheet(onCancelTracking = {})
 }
 
 
