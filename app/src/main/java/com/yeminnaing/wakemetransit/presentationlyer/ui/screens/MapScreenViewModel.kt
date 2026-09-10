@@ -2,9 +2,11 @@ package com.yeminnaing.wakemetransit.presentationlyer.ui.screens
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.yeminnaing.wakemetransit.core.service.AlarmStateHolder
+import com.yeminnaing.wakemetransit.core.service.NotificationHelper
+import com.yeminnaing.wakemetransit.core.service.TrackingStateHolder
 import com.yeminnaing.wakemetransit.domainlayer.model.RouteModel
 import com.yeminnaing.wakemetransit.domainlayer.usecases.route.GetRouteUseCase
-import com.yeminnaing.wakemetransit.presentationlyer.utils.TrackingStateHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,14 +17,17 @@ import javax.inject.Inject
 @HiltViewModel
 class MapScreenViewModel @Inject constructor(
     private val routeUserCase: GetRouteUseCase,
-    private val trackingStateHolder: TrackingStateHolder
+    private val trackingStateHolder: TrackingStateHolder,
+    private val alarmStateHolder: AlarmStateHolder,
+    private val notificationHelper: NotificationHelper,
 ) : ViewModel() {
     //Route
     private val _route = MutableStateFlow<RouteModel?>(null)
     val route = _route.asStateFlow()
 
-    val isTracking: StateFlow<Boolean> =  trackingStateHolder.isTracking
+    val isTracking: StateFlow<Boolean> = trackingStateHolder.isTracking
 
+    val alarmState = alarmStateHolder.showDialog
     fun getRoute(
         startLat: Double,
         startLon: Double,
@@ -39,7 +44,13 @@ class MapScreenViewModel @Inject constructor(
             }
         }
     }
-    fun clearRoute(){
-        _route.value=null
+
+    fun clearRoute() {
+        _route.value = null
+    }
+
+    fun stopAlarm() {
+        notificationHelper.stopAlarm()
+        alarmStateHolder.consumed()
     }
 }

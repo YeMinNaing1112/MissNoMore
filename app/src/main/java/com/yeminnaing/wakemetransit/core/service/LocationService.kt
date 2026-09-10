@@ -8,10 +8,8 @@ import android.content.Intent
 import android.location.Location
 import androidx.core.app.NotificationCompat
 import com.yeminnaing.wakemetransit.R
-import com.yeminnaing.wakemetransit.core.NotificationHelper
 import com.yeminnaing.wakemetransit.core.geofence.GeofenceUseCase
 import com.yeminnaing.wakemetransit.presentationlyer.MainActivity
-import com.yeminnaing.wakemetransit.presentationlyer.utils.TrackingStateHolder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,15 +26,13 @@ class LocationService : Service() {
 
     @Inject
     lateinit var notificationHelper: NotificationHelper
-    private val scope = CoroutineScope(
-        SupervisorJob() +
-                Dispatchers.IO
-    )
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var monitoringJob: Job? = null
+    private var lastStageFired: NotificationHelper.AlarmStage? = null
 
     @Inject
     lateinit var trackingStateHolder: TrackingStateHolder
 
-    private var monitoringJob: Job? = null
 
     companion object {
         const val ACTION_START = "com.yeminnaing.wakemetransit.ACTION_START"
@@ -45,6 +41,10 @@ class LocationService : Service() {
         const val EXTRA_LON = "lon"
         private const val CHANNEL_ID = "LocationService"
         private const val NOTIFICATION_ID = 2
+
+        private const val FAR = 300f
+        private const val NEAR = 200f
+        private const val ARRIVED = 30f
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -73,12 +73,24 @@ class LocationService : Service() {
 
         monitoringJob = scope.launch {
             geofenceUseCase.monitor(destination)
-                .collect { isInside ->
-                    if (isInside) {
-                        notificationHelper.showAlarm()
-                        stopSelf()
+                .collect { distanceMeters ->
+                    val stage = when {
+                        distanceMeters <= ARRIVED -> NotificationHelper.AlarmStage.ARRIVED
+                        distanceMeters <= NEAR -> NotificationHelper.AlarmStage.NEAR_WARNING
+                        distanceMeters <= FAR -> NotificationHelper.AlarmStage.FAR_WARNING
+                        else -> null
+                    }
+                    if (stage != null && stage.ordinal > (lastStageFired?.ordinal ?: -1)) {
+                        lastStageFired = stage
+                        notificationHelper.notifyStage(stage)
                     }
 
+                    if (stage == NotificationHelper.AlarmStage.ARRIVED) {
+                        monitoringJob?.cancel()
+                        stopForeground(STOP_FOREGROUND_REMOVE)
+                        trackingStateHolder.setTracking(false)
+                        stopSelf()
+                    }
                 }
         }
         return START_STICKY

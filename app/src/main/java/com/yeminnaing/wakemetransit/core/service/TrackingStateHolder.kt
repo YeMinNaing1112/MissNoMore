@@ -1,4 +1,4 @@
-package com.yeminnaing.wakemetransit.presentationlyer.utils
+package com.yeminnaing.wakemetransit.core.service
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

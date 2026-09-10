@@ -1,6 +1,6 @@
 package com.yeminnaing.wakemetransit.di
 
-import com.yeminnaing.wakemetransit.core.NotificationHelper
+import com.yeminnaing.wakemetransit.core.service.NotificationHelper
 import com.yeminnaing.wakemetransit.core.location.LocationTracker
 import com.yeminnaing.wakemetransit.core.location.LocationTrackerImpl
 import dagger.Binds

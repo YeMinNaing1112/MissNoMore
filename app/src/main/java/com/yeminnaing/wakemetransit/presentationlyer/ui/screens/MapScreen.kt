@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -72,6 +73,7 @@ fun MapScreen(
     val viewModel: MapScreenViewModel = hiltViewModel()
     val route by viewModel.route.collectAsState()
     val tracking by viewModel.isTracking.collectAsState()
+    val alarmState by viewModel.alarmState.collectAsState()
 
     MapScreenDesign(modifier = modifier, lat, lon, navigateToSearchScreen = {
         navHostController.navigate(MissNoMoreDestinations.SearchScreenDestination)
@@ -81,7 +83,7 @@ fun MapScreen(
         )
     }, isTracking = tracking, clearRoute = {
         viewModel.clearRoute()
-    })
+    }, alarmState, stopAlarm = { viewModel.stopAlarm() })
 }
 
 
@@ -94,6 +96,8 @@ fun MapScreenDesign(
     getRoute: (startLat: Double, startLon: Double, endLat: Double, endLon: Double) -> Unit,
     isTracking: Boolean,
     clearRoute: () -> Unit,
+    alarmState: Boolean,
+    stopAlarm: () -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -340,6 +344,21 @@ fun MapScreenDesign(
             )
         }
 
+        //Cancel Alarm Arrival
+        if (alarmState) {
+            AlertDialog(
+                onDismissRequest = { },
+                title = { Text("Wake up!") },
+                text = { Text("This is your stop") },
+                confirmButton = {
+                    Button(onClick = { stopAlarm() }) {
+                        Text("Stop")
+                    }
+                }
+            )
+        }
+
+
     }
 }
 
@@ -418,5 +437,8 @@ private fun MapScreenPreview() {
         route = null,
         getRoute = { _, _, _, _ -> },
         isTracking = true,
-        clearRoute = {})
+        clearRoute = {},
+        alarmState = true,
+        stopAlarm = {}
+    )
 }
