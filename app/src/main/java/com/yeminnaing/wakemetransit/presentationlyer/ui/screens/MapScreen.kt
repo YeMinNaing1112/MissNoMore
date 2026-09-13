@@ -207,9 +207,6 @@ fun MapScreenDesign(
 
             map.addMapListener(object : MapListener {
                 override fun onScroll(event: ScrollEvent?): Boolean {
-                    if (!overlay.isFollowLocationEnabled) {
-
-                    }
                     return false
                 }
 
@@ -302,7 +299,7 @@ fun MapScreenDesign(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(top=32.dp, start = 16.dp,end=16.dp, bottom = 16.dp)
                         .clickable { navigateToSearchScreen() },
                     shape = RoundedCornerShape(30.dp),
                     colors = CardDefaults.cardColors(
@@ -345,7 +342,7 @@ fun MapScreenDesign(
                     contentColor = colorResource(R.color.white),
                     modifier = Modifier
                         .align(Alignment.End)
-                        .padding(top = 16.dp, end = 16.dp)
+                        .padding(top = 32.dp, end = 16.dp)
 
                 ) {
                     Icon(Icons.Default.MyLocation, contentDescription = "Recenter")

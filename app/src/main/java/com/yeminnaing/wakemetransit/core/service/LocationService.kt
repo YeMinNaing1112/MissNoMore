@@ -119,11 +119,6 @@ class LocationService : Service() {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(channel)
 
-        val stopIntent = Intent(this, LocationService::class.java).apply { action = ACTION_STOP }
-
-        val stopPendingIntent = PendingIntent.getService(
-            this, 0, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
 
         val contentIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -140,7 +135,6 @@ class LocationService : Service() {
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setOngoing(true)
             .setContentIntent(contentPendingIntent)
-            .addAction(R.drawable.ic_launcher_foreground, "cancel", stopPendingIntent)
             .build()
 
         startForeground(NOTIFICATION_ID, notification)

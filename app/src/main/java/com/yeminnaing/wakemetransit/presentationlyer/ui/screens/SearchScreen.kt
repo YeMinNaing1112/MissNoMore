@@ -2,6 +2,7 @@ package com.yeminnaing.wakemetransit.presentationlyer.ui.screens
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -25,10 +28,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -113,7 +119,7 @@ fun SearchScreenDesign(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(top = 32.dp, start = 16.dp, end = 16.dp, bottom = 16.dp),
             placeholder = { Text("Search destination...") },
             leadingIcon = {
                 Icon(Icons.Default.Search, contentDescription = null)
@@ -129,6 +135,7 @@ fun SearchScreenDesign(
 
         )
 //recentPlaces
+        Text("Recent")
         var selectPlace by remember {
             mutableStateOf<PlaceModel?>(null)
         }
@@ -136,33 +143,14 @@ fun SearchScreenDesign(
             LazyColumn(
                 modifier = modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp)
             ) {
                 items(items = recentPlace) { place ->
 
-                    Row(modifier.fillMaxWidth()) {
-                        Text(
-                            text = place.name,
-                            modifier = modifier
-
-                                .weight(1f)
-                                .clickable {
-                                    selectPlace = place
-                                },
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-
-                        Icon(
-                            imageVector = Icons.Filled.Cancel,
-                            contentDescription = "delete the recent search",
-                            modifier = modifier.clickable {
-                                deleteRecent(place.id)
-                            }
-                        )
-
-                    }
+                    RecentPlaceItem(
+                        place = place,
+                        onClick = { selectPlace = place },
+                        onDelete = { deleteRecent(place.id) }
+                    )
 
                 }
             }
@@ -302,12 +290,88 @@ fun CancelTrackingSheet(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RecentPlaceItem(
+    place: PlaceModel,
+    onClick: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                onDelete()
+                true
+            } else {
+                false
+            }
+        }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Red)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = Color.White
+                )
+            }
+        }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .clickable { onClick() }
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.History,
+                contentDescription = null,
+                modifier = Modifier.padding(end = 12.dp)
+            )
+
+            Text(
+                text = "${place.name}, ${"%.4f".format(place.lat)}, ${"%.4f".format(place.lon)}",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun RecentPlaceItemPrev() {
+    RecentPlaceItem(place = PlaceModel(
+        id= "1",
+        name = "Yangon",
+        lat = 12121.0,
+        lon = 21212.0
+    ), onClick = {},
+        onDelete = {})
+}
 
 @Preview
 @Composable
 private fun BottomSheetPrev() {
     CancelTrackingSheet(onDismiss = {}, name = "Siam Pragon", navigateToHomeScreen = {})
 }
+
+
 
 @Preview
 @Composable
