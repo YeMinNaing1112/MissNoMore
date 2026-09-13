@@ -1,7 +1,6 @@
 package com.yeminnaing.wakemetransit.presentationlyer.ui.screens
 
 import android.content.pm.PackageManager
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -12,19 +11,25 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,7 +42,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -87,6 +94,7 @@ fun MapScreen(
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreenDesign(
     modifier: Modifier = Modifier, lat: Double?,
@@ -103,9 +111,13 @@ fun MapScreenDesign(
 
     var mapView by remember { mutableStateOf<MapView?>(null) }
 
-    var isFollowing by remember { mutableStateOf(true) }
+
 
     var showCancelTrackingSheet by remember {
+        mutableStateOf(false)
+    }
+
+    var showCancelFloatingActionButton by remember {
         mutableStateOf(false)
     }
 
@@ -196,7 +208,7 @@ fun MapScreenDesign(
             map.addMapListener(object : MapListener {
                 override fun onScroll(event: ScrollEvent?): Boolean {
                     if (!overlay.isFollowLocationEnabled) {
-                        isFollowing = false
+
                     }
                     return false
                 }
@@ -285,36 +297,52 @@ fun MapScreenDesign(
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
         ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .clickable { navigateToSearchScreen() }, shape = RoundedCornerShape(30.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+
+            if (!showCancelFloatingActionButton) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .clickable { navigateToSearchScreen() },
+                    shape = RoundedCornerShape(30.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = colorResource(R.color.white),
+                        contentColor = colorResource(R.color.Blue)
+                    )
                 ) {
-                    Icon(Icons.Default.Search, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Search destination")
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            tint = colorResource(R.color.Blue)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Search destination", color = colorResource(R.color.Blue)
+                        )
+                    }
                 }
             }
+
+
             //FLowing the User Position
-            if (!isFollowing) {
+
                 FloatingActionButton(
                     onClick = {
                         val myLocation = locationOverLay?.myLocation
                         if (myLocation != null) {
                             mapView?.controller?.animateTo(
-                                myLocation,
-                                18.0,
-                                800L
+                                myLocation, 18.0, 800L
                             )
                         }
                         locationOverLay?.enableFollowLocation()
-                        isFollowing = true
+
                     },
+                    containerColor = colorResource(R.color.Blue),
+                    contentColor = colorResource(R.color.white),
                     modifier = Modifier
                         .align(Alignment.End)
                         .padding(top = 16.dp, end = 16.dp)
@@ -322,45 +350,71 @@ fun MapScreenDesign(
                 ) {
                     Icon(Icons.Default.MyLocation, contentDescription = "Recenter")
                 }
-            }
-        }
 
-        // Cancel Tracking Dialog Box to Cancel the Destination , Service and Route
-        LaunchedEffect(trackedDestinations) {
-            if (trackedDestinations != null) {
-                showCancelTrackingSheet = true
-            }
-        }
-        if (showCancelTrackingSheet) {
-
-            CancelTrackingSheet(
-                modifier = Modifier.align(Alignment.BottomCenter),
-                onCancelTracking = {
-                    stopService(context)
-                    trackedDestinations = null
-                    clearRoute()
-                    showCancelTrackingSheet = false
+            //Called Cancel Tracking Bottom Sheet
+            LaunchedEffect(trackedDestinations) {
+                if (trackedDestinations != null) {
+                        showCancelFloatingActionButton=true
                 }
-            )
-        }
+            }
 
-        //Cancel Alarm Arrival
+            if(showCancelFloatingActionButton){
+                FloatingActionButton(
+                    onClick = {
+                        showCancelTrackingSheet=true
+                    },
+                    containerColor = colorResource(R.color.Red),
+                    contentColor = colorResource(R.color.white),
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(top = 16.dp, end = 16.dp)
+
+                ) {
+                    Icon(Icons.Default.Cancel, contentDescription = "Cancel")
+                }
+            }
+
+        }
+        // Cancel Tracking Dialog Box to Cancel the Destination , Service and Route
+
+        if (showCancelTrackingSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showCancelTrackingSheet = false },
+                scrimColor = Color.Transparent
+            ) {
+                CancelTrackingSheet(
+                    onCancelTracking = {
+                        stopService(context)
+                        trackedDestinations = null
+                        clearRoute()
+                        showCancelTrackingSheet = false
+                        showCancelFloatingActionButton=false
+                    }
+                )
+            }
+        }}
+
+//Cancel Alarm Arrival
         if (alarmState) {
             AlertDialog(
                 onDismissRequest = { },
                 title = { Text("Wake up!") },
                 text = { Text("This is your stop") },
                 confirmButton = {
-                    Button(onClick = { stopAlarm() }) {
+                    Button(
+                        onClick = { stopAlarm() }, colors = ButtonDefaults.buttonColors(
+                            containerColor = colorResource(R.color.Blue)
+                        )
+                    ) {
                         Text("Stop")
                     }
-                }
-            )
+                })
         }
 
 
     }
-}
+
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -369,14 +423,10 @@ fun CancelTrackingSheet(
     modifier: Modifier = Modifier,
     onCancelTracking: () -> Unit,
 ) {
-    Log.d("TrackingDebug", "CancelTrackingSheet composing")
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        shape = RoundedCornerShape(24.dp),
-        tonalElevation = 8.dp,
-        shadowElevation = 8.dp
+            .navigationBarsPadding(),
     ) {
         Column(
             modifier = Modifier
@@ -394,7 +444,10 @@ fun CancelTrackingSheet(
                 onClick = onCancelTracking,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(R.color.Red)
+                )
             ) {
                 Text("Cancel tracking")
             }
@@ -439,6 +492,5 @@ private fun MapScreenPreview() {
         isTracking = true,
         clearRoute = {},
         alarmState = true,
-        stopAlarm = {}
-    )
+        stopAlarm = {})
 }

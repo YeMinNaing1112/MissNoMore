@@ -29,6 +29,16 @@ class NotificationHelper @Inject constructor(
     @Inject
     lateinit var alarmStateHolder: AlarmStateHolder
 
+    private val vibrator: Vibrator? by lazy {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager =
+                context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+            vibratorManager?.defaultVibrator
+        } else {
+            context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        }
+    }
+
     init {
         createChannel()
     }
@@ -90,26 +100,43 @@ class NotificationHelper @Inject constructor(
     }
 
     fun notifyStage(stage: AlarmStage) {
-        if (stage.vibrate) vibrate()
+        if (stage.vibrate) {
+            if (stage == AlarmStage.ARRIVED) {
+                startContinuousVibration()
+            } else {
+                vibrateOnce()
+            }
+        }
         if (stage.playSound) playSong()
         showNotification(stage)
         if (stage == AlarmStage.ARRIVED) alarmStateHolder.trigger()
     }
 
-    private fun vibrate() {
-        val pattern = longArrayOf(0, 400, 200, 400)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager =
-                context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            vibratorManager.defaultVibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
-        } else {
-            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(pattern, -1)
-            }
+    // single short buzz — used for NEAR_WARNING (200m)
+    private fun vibrateOnce() {
+        try {
+            val pattern = longArrayOf(0, 400, 200, 400)
+            vibrator?.vibrate(VibrationEffect.createWaveform(pattern, -1)) // -1 = play once
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // continuous buzz — used for ARRIVED, repeats forever until stopAlarm() cancels it
+    private fun startContinuousVibration() {
+        try {
+            val pattern = longArrayOf(0, 400, 200, 400)
+            vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0)) // 0 = loop from index 0
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun stopVibration() {
+        try {
+            vibrator?.cancel()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -140,6 +167,7 @@ class NotificationHelper @Inject constructor(
 
     fun stopAlarm() {
         stopSong()
+        stopVibration()
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.cancel(NOTIFICATION_ID)
     }
