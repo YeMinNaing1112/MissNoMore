@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
@@ -82,8 +81,12 @@ fun MapScreen(
     val tracking by viewModel.isTracking.collectAsState()
     val alarmState by viewModel.alarmState.collectAsState()
 
-    MapScreenDesign(modifier = modifier, lat, lon, navigateToSearchScreen = {
-        navHostController.navigate(MissNoMoreDestinations.SearchScreenDestination)
+    MapScreenDesign(modifier = modifier, lat, lon, navigateToSearchScreen = { mylocation ->
+        navHostController.navigate(
+            MissNoMoreDestinations.SearchScreenDestination(
+                lat = mylocation.latitude, lon = mylocation.longitude
+            )
+        )
     }, route, getRoute = { startLat, startLon, endLat, endLon ->
         viewModel.getRoute(
             startLat, startLon, endLat, endLon
@@ -99,7 +102,7 @@ fun MapScreen(
 fun MapScreenDesign(
     modifier: Modifier = Modifier, lat: Double?,
     lon: Double?,
-    navigateToSearchScreen: () -> Unit,
+    navigateToSearchScreen: (location: GeoPoint) -> Unit,
     route: RouteModel?,
     getRoute: (startLat: Double, startLon: Double, endLat: Double, endLon: Double) -> Unit,
     isTracking: Boolean,
@@ -110,7 +113,6 @@ fun MapScreenDesign(
     val context = LocalContext.current
 
     var mapView by remember { mutableStateOf<MapView?>(null) }
-
 
 
     var showCancelTrackingSheet by remember {
@@ -299,10 +301,10 @@ fun MapScreenDesign(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top=32.dp, start = 16.dp,end=16.dp, bottom = 16.dp)
-                        .clickable { navigateToSearchScreen() },
-                    shape = RoundedCornerShape(30.dp),
-                    colors = CardDefaults.cardColors(
+                        .padding(top = 32.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
+                        .clickable {
+                            locationOverLay?.myLocation?.let { navigateToSearchScreen(it) }
+                        }, shape = RoundedCornerShape(30.dp), colors = CardDefaults.cardColors(
                         containerColor = colorResource(R.color.white),
                         contentColor = colorResource(R.color.Blue)
                     )
@@ -327,38 +329,38 @@ fun MapScreenDesign(
 
             //FLowing the User Position
 
-                FloatingActionButton(
-                    onClick = {
-                        val myLocation = locationOverLay?.myLocation
-                        if (myLocation != null) {
-                            mapView?.controller?.animateTo(
-                                myLocation, 18.0, 800L
-                            )
-                        }
-                        locationOverLay?.enableFollowLocation()
+            FloatingActionButton(
+                onClick = {
+                    val myLocation = locationOverLay?.myLocation
+                    if (myLocation != null) {
+                        mapView?.controller?.animateTo(
+                            myLocation, 18.0, 800L
+                        )
+                    }
+                    locationOverLay?.enableFollowLocation()
 
-                    },
-                    containerColor = colorResource(R.color.Blue),
-                    contentColor = colorResource(R.color.white),
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(top = 32.dp, end = 16.dp)
+                },
+                containerColor = colorResource(R.color.Blue),
+                contentColor = colorResource(R.color.white),
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(top = 32.dp, end = 16.dp)
 
-                ) {
-                    Icon(Icons.Default.MyLocation, contentDescription = "Recenter")
-                }
+            ) {
+                Icon(Icons.Default.MyLocation, contentDescription = "Recenter")
+            }
 
             //Called Cancel Tracking Bottom Sheet
             LaunchedEffect(trackedDestinations) {
                 if (trackedDestinations != null) {
-                        showCancelFloatingActionButton=true
+                    showCancelFloatingActionButton = true
                 }
             }
 
-            if(showCancelFloatingActionButton){
+            if (showCancelFloatingActionButton) {
                 FloatingActionButton(
                     onClick = {
-                        showCancelTrackingSheet=true
+                        showCancelTrackingSheet = true
                     },
                     containerColor = colorResource(R.color.Red),
                     contentColor = colorResource(R.color.white),
@@ -385,33 +387,31 @@ fun MapScreenDesign(
                         trackedDestinations = null
                         clearRoute()
                         showCancelTrackingSheet = false
-                        showCancelFloatingActionButton=false
-                    }
-                )
+                        showCancelFloatingActionButton = false
+                    })
             }
-        }}
+        }
+    }
 
 //Cancel Alarm Arrival
-        if (alarmState) {
-            AlertDialog(
-                onDismissRequest = { },
-                title = { Text("Wake up!") },
-                text = { Text("This is your stop") },
-                confirmButton = {
-                    Button(
-                        onClick = { stopAlarm() }, colors = ButtonDefaults.buttonColors(
-                            containerColor = colorResource(R.color.Blue)
-                        )
-                    ) {
-                        Text("Stop")
-                    }
-                })
-        }
-
-
+    if (alarmState) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Wake up!") },
+            text = { Text("This is your stop") },
+            confirmButton = {
+                Button(
+                    onClick = { stopAlarm() }, colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(R.color.Blue)
+                    )
+                ) {
+                    Text("Stop")
+                }
+            })
     }
 
 
+}
 
 
 @OptIn(ExperimentalMaterial3Api::class)

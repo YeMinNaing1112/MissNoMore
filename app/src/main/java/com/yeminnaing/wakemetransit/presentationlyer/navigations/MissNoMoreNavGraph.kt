@@ -26,8 +26,12 @@ fun MissNoMoreNavGraph(startLat: Double? = null, startLon: Double? = null) {
                 navHostController = navController
             )
         }
-        composable<MissNoMoreDestinations.SearchScreenDestination> {
-            SearchScreen(navHost = navController)
+        composable<MissNoMoreDestinations.SearchScreenDestination> { backStack->
+            val myLocation: MissNoMoreDestinations.SearchScreenDestination = backStack.toRoute()
+            SearchScreen(navHost = navController,
+                lat = myLocation.lat,
+                lon = myLocation.lon
+            )
         }
     }
 }

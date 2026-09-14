@@ -14,8 +14,14 @@ class SearchRepoImpl @Inject constructor(
     private val api: NominatimApi,
     private val dao: RecentPlaceDao,
 ) : SearchRepository {
-    override suspend fun searchPlaces(query: String): List<PlaceModel> {
-        return api.searchPlace(query).map {
+    override suspend fun searchPlaces(
+        query: String,
+        countryCode: String?,
+    ): List<PlaceModel> {
+        return api.searchPlace(
+            query = query,
+            countryCodes = countryCode,
+        ).map {
             PlaceModel(
                 id = it.place_id.toString(),
                 name = it.display_name,
@@ -46,8 +52,23 @@ class SearchRepoImpl @Inject constructor(
         }
     }
 
-    override suspend fun deleteRecentPlace(id:String) {
-           dao.clearRecent(id)
+    override suspend fun deleteRecentPlace(id: String) {
+        dao.clearRecent(id)
+    }
+
+    override suspend fun getCountryCode(
+        latitude: Double?,
+        longitude: Double?,
+    ): String? {
+        return try {
+            api.reverseGeocode(
+                latitude = latitude,
+                longitude = longitude
+            ).address?.countryCode
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
 }

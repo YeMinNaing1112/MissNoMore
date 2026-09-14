@@ -14,5 +14,8 @@ sealed class MissNoMoreDestinations {
         ) : MissNoMoreDestinations()
 
     @Serializable
-    data object SearchScreenDestination : MissNoMoreDestinations()
+    data class SearchScreenDestination(
+        val lat: Double? = null,
+        val lon: Double? = null,
+    ) : MissNoMoreDestinations()
 }

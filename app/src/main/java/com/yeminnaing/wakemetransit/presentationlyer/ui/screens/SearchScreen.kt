@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
@@ -36,6 +35,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -58,10 +59,23 @@ import com.yeminnaing.wakemetransit.presentationlyer.navigations.MissNoMoreDesti
 
 
 @Composable
-fun SearchScreen(modifier: Modifier = Modifier, navHost: NavHostController) {
+fun SearchScreen(
+    modifier: Modifier = Modifier,
+    lat: Double?,
+    lon: Double?,
+    navHost: NavHostController,
+) {
     val viewModel: SearchScreenViewModel = hiltViewModel()
     val placeStates by viewModel.getPlaceStates.collectAsState()
     val recentPlace by viewModel.recentPlaces.collectAsStateWithLifecycle()
+
+    LaunchedEffect(lat, lon) {
+        viewModel.getCountryCode(
+            latitude = lat,
+            longitude = lon
+        )
+    }
+
     SearchScreenDesign(
         modifier,
         placeStates,
@@ -261,7 +275,7 @@ fun CancelTrackingSheet(
                     modifier = modifier
                         .weight(1F)
                         .padding(end = 16.dp),
-                    border = BorderStroke(1.dp , color = colorResource(R.color.Blue)),
+                    border = BorderStroke(1.dp, color = colorResource(R.color.Blue)),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorResource(R.color.white)
                     ),
@@ -295,7 +309,7 @@ fun CancelTrackingSheet(
 fun RecentPlaceItem(
     place: PlaceModel,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
@@ -356,12 +370,13 @@ fun RecentPlaceItem(
 @Preview
 @Composable
 private fun RecentPlaceItemPrev() {
-    RecentPlaceItem(place = PlaceModel(
-        id= "1",
-        name = "Yangon",
-        lat = 12121.0,
-        lon = 21212.0
-    ), onClick = {},
+    RecentPlaceItem(
+        place = PlaceModel(
+            id = "1",
+            name = "Yangon",
+            lat = 12121.0,
+            lon = 21212.0
+        ), onClick = {},
         onDelete = {})
 }
 
@@ -370,7 +385,6 @@ private fun RecentPlaceItemPrev() {
 private fun BottomSheetPrev() {
     CancelTrackingSheet(onDismiss = {}, name = "Siam Pragon", navigateToHomeScreen = {})
 }
-
 
 
 @Preview

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yeminnaing.wakemetransit.domainlayer.model.PlaceModel
 import com.yeminnaing.wakemetransit.domainlayer.usecases.search.DeleteRecentPlacesUseCase
+import com.yeminnaing.wakemetransit.domainlayer.usecases.search.GetCountryCodeUseCase
 import com.yeminnaing.wakemetransit.domainlayer.usecases.search.GetRecentPlaceUseCase
 import com.yeminnaing.wakemetransit.domainlayer.usecases.search.SaveRecentPlaceUseCase
 import com.yeminnaing.wakemetransit.domainlayer.usecases.search.SearchPlacesUseCase
@@ -25,10 +26,13 @@ class SearchScreenViewModel @Inject constructor(
     val mSaveRecentPlacesUseCase: SaveRecentPlaceUseCase,
     val mGetRecentPlaceUseCase: GetRecentPlaceUseCase,
     val mDeleteRecentPlaceUseCase: DeleteRecentPlacesUseCase,
+     val getCountryCodeUseCase: GetCountryCodeUseCase
 ) : ViewModel() {
     private var searchQuery = MutableStateFlow("")
     private var _getPlaceSates = MutableStateFlow<GetPlaceStates>(GetPlaceStates.Empty)
     val getPlaceStates = _getPlaceSates.asStateFlow()
+    private val _countryCode = MutableStateFlow<String?>(null)
+    val countryCode = _countryCode.asStateFlow()
 
     init {
         searchPlace()
@@ -67,7 +71,7 @@ class SearchScreenViewModel @Inject constructor(
                     _getPlaceSates.value = GetPlaceStates.Loading
 
                     try {
-                        val result = mSearchPlaceUseCase(query)
+                        val result = mSearchPlaceUseCase(query,countryCode=_countryCode.value)
 
                         _getPlaceSates.value = GetPlaceStates.Success(result)
                     } catch (e: Exception) {
@@ -75,6 +79,20 @@ class SearchScreenViewModel @Inject constructor(
                     }
                 }
 
+        }
+    }
+
+    fun getCountryCode(
+        latitude: Double?,
+        longitude: Double?
+    ) {
+        viewModelScope.launch {
+            val result = getCountryCodeUseCase(
+                latitude = latitude,
+                longitude = longitude
+            )
+
+            _countryCode.value = result
         }
     }
 
