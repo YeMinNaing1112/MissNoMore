@@ -167,14 +167,19 @@ fun SearchScreenDesign(
                     modifier = modifier
                         .fillMaxWidth()
                 ) {
-                    items(items = recentPlace) { place ->
-
+                    items(
+                        items = recentPlace,
+                        key = { place -> place.id }
+                    ) { place ->
                         RecentPlaceItem(
                             place = place,
-                            onClick = { selectPlace = place },
-                            onDelete = { deleteRecent(place.id) }
+                            onClick = {
+                                selectPlace = place
+                            },
+                            onDelete = {
+                               deleteRecent(place.id)
+                            }
                         )
-
                     }
                 }
                 selectPlace?.let { it ->

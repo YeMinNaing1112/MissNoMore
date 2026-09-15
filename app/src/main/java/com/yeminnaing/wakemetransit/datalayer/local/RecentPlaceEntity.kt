@@ -10,4 +10,5 @@ data class RecentPlaceEntity(
     val name: String,
     val lat: Double,
     val lon: Double,
+    val lastUsedAt: Long = System.currentTimeMillis()
 )
