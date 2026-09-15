@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,8 +47,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -134,9 +137,13 @@ fun SearchScreenDesign(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 32.dp, start = 16.dp, end = 16.dp, bottom = 16.dp),
-            placeholder = { Text("Search destination...") },
+            placeholder = { Text("Search destination...", color = colorResource(R.color.Blue)) },
             leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = null)
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = null,
+                    tint = colorResource(R.color.Blue)
+                )
 
             },
             singleLine = true,
@@ -149,40 +156,50 @@ fun SearchScreenDesign(
 
         )
 //recentPlaces
-        Text("Recent")
         var selectPlace by remember {
             mutableStateOf<PlaceModel?>(null)
         }
         if (query.isEmpty()) {
-            LazyColumn(
-                modifier = modifier
-                    .fillMaxWidth()
-            ) {
-                items(items = recentPlace) { place ->
+            if (recentPlace.isEmpty()) {
+                NoRecentSearchCard()
+            } else {
+                LazyColumn(
+                    modifier = modifier
+                        .fillMaxWidth()
+                ) {
+                    items(items = recentPlace) { place ->
 
-                    RecentPlaceItem(
-                        place = place,
-                        onClick = { selectPlace = place },
-                        onDelete = { deleteRecent(place.id) }
-                    )
+                        RecentPlaceItem(
+                            place = place,
+                            onClick = { selectPlace = place },
+                            onDelete = { deleteRecent(place.id) }
+                        )
 
+                    }
+                }
+                selectPlace?.let { it ->
+                    CancelTrackingSheet(
+                        modifier = modifier,
+                        onDismiss = {
+                            selectPlace = null
+                        },
+                        name = it.name,
+                    ) { navigateToMapScreen(it) }
                 }
             }
-            selectPlace?.let { it ->
-                CancelTrackingSheet(
-                    modifier = modifier,
-                    onDismiss = {
-                        selectPlace = null
-                    },
-                    name = it.name,
-                ) { navigateToMapScreen(it) }
-            }
+
+
         }
 
         when (placeStates) {
-            is SearchScreenViewModel.GetPlaceStates.Empty -> {}
+            is SearchScreenViewModel.GetPlaceStates.Empty -> {
+                if (query.isNotEmpty()) {
+                    NoSearchResultsCard()
+                }
+            }
+
             is SearchScreenViewModel.GetPlaceStates.Error -> {
-                Text("No results found on Map")
+                NoSearchResultsCard()
             }
 
             is SearchScreenViewModel.GetPlaceStates.Loading -> {
@@ -190,11 +207,12 @@ fun SearchScreenDesign(
                     modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
+                    1
                     CircularProgressIndicator()
                 }
 
             }
-
+            //Search Result
             is SearchScreenViewModel.GetPlaceStates.Success -> {
                 val places = placeStates.data
                 LazyColumn(
@@ -203,13 +221,13 @@ fun SearchScreenDesign(
                         .padding(start = 16.dp, end = 16.dp)
                 ) {
                     items(places) { place ->
-                        Text(
-                            text = place.name,
-                            modifier = modifier.clickable {
-//                                navigateToMapScreen(place)
+                        SearchResultItem(
+                            place = place,
+                            onClick = {
                                 selectPlace = place
                                 addToRecent(place)
-                            })
+                            }
+                        )
                     }
                 }
 
@@ -311,6 +329,11 @@ fun RecentPlaceItem(
     onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val parts = place.name.split(",", limit = 2)
+
+    val placeName = parts[0].trim()
+    val address = parts.getOrNull(1)?.trim().orEmpty()
+
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart) {
@@ -347,24 +370,204 @@ fun RecentPlaceItem(
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
                 .clickable { onClick() }
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(
+                    horizontal = 16.dp,
+                    vertical = 12.dp
+                ),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.History,
                 contentDescription = null,
-                modifier = Modifier.padding(end = 12.dp)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 16.dp)
             )
 
-            Text(
-                text = "${place.name}, ${"%.4f".format(place.lat)}, ${"%.4f".format(place.lon)}",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            Column(
                 modifier = Modifier.weight(1f)
-            )
+            ) {
+                Text(
+                    text = placeName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
+                if (address.isNotEmpty()) {
+                    Text(
+                        text = address,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
         }
     }
+}
+
+@Composable
+fun SearchResultItem(
+    place: PlaceModel,
+    onClick: () -> Unit,
+) {
+    val parts = place.name.split(",", limit = 2)
+
+    val placeName = parts[0].trim()
+    val address = parts.getOrNull(1)?.trim().orEmpty()
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(
+                horizontal = 16.dp,
+                vertical = 12.dp
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(end = 16.dp)
+        )
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = placeName,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            if (address.isNotEmpty()) {
+                Text(
+                    text = address,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun NoRecentSearchCard(
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+
+            Icon(
+                imageVector = Icons.Outlined.History,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "No recent searches",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Your recent places will appear here",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun NoSearchResultsCard(
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.SearchOff,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Can't find what you're looking for?",
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Try searching with a different name or address.",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun NoSearchResultCardPrev() {
+    NoSearchResultsCard()
+}
+
+@Preview
+@Composable
+private fun NoRecentSearchCardPrev() {
+    NoRecentSearchCard()
+}
+
+@Preview
+@Composable
+private fun SearchResultItemPrev() {
+    SearchResultItem(
+        place = PlaceModel(
+            id = "1",
+            name = "Yangon",
+            lat = 12121.0,
+            lon = 21212.0
+        )
+    ) { }
 }
 
 @Preview

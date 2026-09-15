@@ -26,13 +26,12 @@ class SearchScreenViewModel @Inject constructor(
     val mSaveRecentPlacesUseCase: SaveRecentPlaceUseCase,
     val mGetRecentPlaceUseCase: GetRecentPlaceUseCase,
     val mDeleteRecentPlaceUseCase: DeleteRecentPlacesUseCase,
-     val getCountryCodeUseCase: GetCountryCodeUseCase
+    val getCountryCodeUseCase: GetCountryCodeUseCase,
 ) : ViewModel() {
     private var searchQuery = MutableStateFlow("")
     private var _getPlaceSates = MutableStateFlow<GetPlaceStates>(GetPlaceStates.Empty)
     val getPlaceStates = _getPlaceSates.asStateFlow()
     private val _countryCode = MutableStateFlow<String?>(null)
-    val countryCode = _countryCode.asStateFlow()
 
     init {
         searchPlace()
@@ -51,7 +50,7 @@ class SearchScreenViewModel @Inject constructor(
         }
     }
 
-    fun deleteRecentPlace(id:String){
+    fun deleteRecentPlace(id: String) {
         viewModelScope.launch {
             mDeleteRecentPlaceUseCase(id)
         }
@@ -71,9 +70,13 @@ class SearchScreenViewModel @Inject constructor(
                     _getPlaceSates.value = GetPlaceStates.Loading
 
                     try {
-                        val result = mSearchPlaceUseCase(query,countryCode=_countryCode.value)
+                        val result = mSearchPlaceUseCase(query, countryCode = _countryCode.value)
 
-                        _getPlaceSates.value = GetPlaceStates.Success(result)
+                        _getPlaceSates.value = if (result.isEmpty()) {
+                            GetPlaceStates.Empty
+                        } else {
+                            GetPlaceStates.Success(result)
+                        }
                     } catch (e: Exception) {
                         _getPlaceSates.value = GetPlaceStates.Error(e.message.toString())
                     }
@@ -84,7 +87,7 @@ class SearchScreenViewModel @Inject constructor(
 
     fun getCountryCode(
         latitude: Double?,
-        longitude: Double?
+        longitude: Double?,
     ) {
         viewModelScope.launch {
             val result = getCountryCodeUseCase(
