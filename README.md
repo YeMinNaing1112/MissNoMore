@@ -1,7 +1,9 @@
 # Miss NO More 🚆📍
 
-An An droid app that helps commuters avoid missing their bus, train, or metro stop by tracking their destination and triggering an alarm when they get close.   
-         
+An An droid app that helps commuters avoid missing their bus, train, or metro stop by tracking their destination and triggering an alarm when they get close.
+
+![Map Screen](https://github.com/YeMinNaing1112/MissNoMore/blob/3f7ea0210d1894edfa306d55042e4663f1091354/MissNoMorePhoto.png)
+
 ## 🛠 Tech Stack
 
 - **Language:** Kotlin
