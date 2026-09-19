@@ -6,7 +6,7 @@ import dagger.hilt.android.HiltAndroidApp
 import org.osmdroid.config.Configuration
 
 @HiltAndroidApp
-class WakeMeTransitApp: Application() {
+class MissNoMore: Application() {
     override fun onCreate() {
         super.onCreate()
         Configuration.getInstance().load(

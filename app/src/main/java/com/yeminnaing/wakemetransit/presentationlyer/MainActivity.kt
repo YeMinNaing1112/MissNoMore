@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.yeminnaing.wakemetransit.presentationlyer.navigations.MissNoMoreNavGraph
+import com.yeminnaing.wakemetransit.presentationlyer.ui.screens.MissNoMoreRoot
 import com.yeminnaing.wakemetransit.presentationlyer.ui.screens.SearchScreen
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -23,7 +24,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val (initialLat, initialLon) = extractDestination(intent)
         setContent {
-            MissNoMoreNavGraph(startLat = initialLat, startLon = initialLon)
+            MissNoMoreRoot(
+                initialLat = initialLat,
+                initialLon = initialLon
+            )
         }
     }
 

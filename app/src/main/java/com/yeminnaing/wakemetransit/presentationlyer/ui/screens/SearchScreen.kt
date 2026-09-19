@@ -155,7 +155,6 @@ fun SearchScreenDesign(
             )
 
         )
-//recentPlaces
         var selectPlace by remember {
             mutableStateOf<PlaceModel?>(null)
         }

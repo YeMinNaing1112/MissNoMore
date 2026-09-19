@@ -1,6 +1,7 @@
 package com.yeminnaing.wakemetransit.presentationlyer.ui.screens
 
 import android.content.pm.PackageManager
+import android.net.http.SslCertificate.saveState
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -58,6 +59,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.yeminnaing.wakemetransit.R
 import com.yeminnaing.wakemetransit.domainlayer.model.RouteModel
@@ -94,7 +96,13 @@ fun MapScreen(
             MissNoMoreDestinations.SearchScreenDestination(
                 lat = mylocation.latitude, lon = mylocation.longitude
             )
-        )
+        ){
+            popUpTo(navHostController.graph.findStartDestination().id) {
+                inclusive = false
+                saveState = true
+            }
+            launchSingleTop = true
+        }
     }, route, getRoute = { startLat, startLon, endLat, endLon ->
         viewModel.getRoute(
             startLat, startLon, endLat, endLon
@@ -132,30 +140,9 @@ fun MapScreenDesign(
     }
 
     var trackedDestinations by remember { mutableStateOf<Pair<Double, Double>?>(null) }
-
-    var hasLocationPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context, android.Manifest.permission.ACCESS_FINE_LOCATION
-
-            ) == PackageManager.PERMISSION_GRANTED
-        )
-    }
     var locationOverLay by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
     val distinationIcon = remember {
         ContextCompat.getDrawable(context, R.drawable.destination_blue)
-    }
-
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        hasLocationPermission = isGranted
-    }
-
-    LaunchedEffect(Unit) {
-        if (!hasLocationPermission) {
-            launcher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
-        }
     }
     //Draw Route
     LaunchedEffect(trackedDestinations) {
